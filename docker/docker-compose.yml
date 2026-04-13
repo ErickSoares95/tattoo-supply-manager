@@ -1,0 +1,26 @@
+services:
+
+  postgres:
+    image: postgres:18
+    container_name: tattoo-supply-manager-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: tattoo-supply-manager-db
+      POSTGRES_USER: tattoo_user
+      POSTGRES_PASSWORD: tattoo_pass
+    ports:
+      - "5432:5432"
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: tattoo-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/tattoo-supply-manager-db
+      SPRING_DATASOURCE_USERNAME: tattoo_user
+      SPRING_DATASOURCE_PASSWORD: tattoo_pass
