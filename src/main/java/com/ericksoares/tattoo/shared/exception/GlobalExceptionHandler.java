@@ -21,7 +21,8 @@ public class GlobalExceptionHandler {
 
         ErrorResponse error = new ErrorResponse(
                 ex.getStatus().value(),
-                ex.getMessage()
+                ex.getMessage(),
+                null
         );
 
         return ResponseEntity.status(ex.getStatus()).body(error);
@@ -34,7 +35,8 @@ public class GlobalExceptionHandler {
 
         ErrorResponse error = new ErrorResponse(
                 500,
-                "Internal server error"
+                "Internal server error",
+                null
         );
 
         return ResponseEntity.status(500).body(error);
