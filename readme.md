@@ -1,6 +1,8 @@
 # 🧾 Tattoo Supply Manager
 
-Backend system for managing tattoo products, designed with a strong focus on **scalability**, **modular architecture**, and **evolution towards microservices**.
+Backend system designed to simulate real-world tattoo studio operations, including product inventory and order management.
+
+Built with a strong focus on **modular architecture, business rules, and scalability**, following a **Modular Monolith (Modulith)** approach, ready to evolve into microservices.
 
 ---
 
@@ -15,41 +17,37 @@ Backend system for managing tattoo products, designed with a strong focus on **s
 
 ---
 
-## 🧠 Architecture Overview
+## 🧠 Architecture
 
-This project follows a **Modular Monolith (Modularith)** approach, structured around domain boundaries and designed for **gradual evolution into microservices**.
+This project follows a **Modular Monolith architecture** structured by domain modules, combined with **clean separation of concerns**.
 
-### 🔹 Architectural Principles
+### 🔹 Key Concepts
 
 - Use-case oriented services (application layer)
-- Clear separation of concerns (Controller → Service → Repository)
-- DTO-based communication (API decoupling)
+- Domain-driven modularization
+- DTO-based API communication
 - Centralized exception handling
-- Pagination and sorting via Spring Data
+- Pagination and filtering (Specification)
 - Event-driven communication between modules
-- Inspired by Clean Architecture & DDD
 
 ---
 
-## 🧩 Module Design
+## 🧩 Modules
 
-The system is divided into independent modules with low coupling.
-
-Example: product → core business logic
- 		notification → side effects (event-driven)
-		 shared → cross-cutting concerns
-
-This structure enables safe and incremental extraction into microservices.
+- **Product** → inventory management and stock validation
+- **Order** → order processing and stock updates
+- **Notification** → event-driven side effects (email, logs, integrations)
 
 ---
 
 ## 📦 Features
 
-- Product creation  
-- Paginated product listing  
-- Find product by ID  
-- Standardized error handling  
-- Fully containerized environment  
+- Product creation and management
+- Paginated listing with sorting and filtering
+- Stock validation rules
+- Event-driven communication between modules
+- Centralized error handling
+- Fully containerized environment
 
 ---
 
@@ -57,53 +55,3 @@ This structure enables safe and incremental extraction into microservices.
 
 ```bash
 docker compose up --build
-```
-
-
-
-Application will be available at:
-
-```
-http://localhost:8080
-```
-
-
-
-## 💻 Running Locally
-
-```
-./mvnw clean install
-./mvnw spring-boot:run
-```
-
-## 🔗 API Endpoints
-
-| Method | Endpoint                               |
-| ------ | :------------------------------------- |
-| POST   | /products                              |
-| GET    | /products?page=0&size=10&sort=name,asc |
-| GET    | /products/{id}                         |
-
-## 🎯 Roadmap
-
-- Dynamic filtering (Specification)
-- Bean Validation
-- Authentication (JWT)
-- Internal event-driven communication
-- Observability (logs & metrics)
-- Gradual migration to microservices
-
-------
-
-## 📈 Architectural Evolution
-
-```
-Modular Monolith → Event-Driven Modularith → Microservices
-```
-
-------
-
-## 👨‍💻 Author
-
-Erick de Lira Soares
-Backend Software Engineer
