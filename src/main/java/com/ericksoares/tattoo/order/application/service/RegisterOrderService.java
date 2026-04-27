@@ -8,6 +8,7 @@ import com.ericksoares.tattoo.order.infrasctruture.repository.OrderRepository;
 import com.ericksoares.tattoo.product.domain.entity.Product;
 import com.ericksoares.tattoo.product.domain.exception.ProductNotFoundException;
 import com.ericksoares.tattoo.product.infrastructure.repository.ProductRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 public class RegisterOrderService {
 
@@ -43,8 +45,6 @@ public class RegisterOrderService {
 
             product.decreaseStock(reqItem.quantity());
 
-            product.setStock(product.getStock() - reqItem.quantity());
-
             OrderItem item = new OrderItem();
             item.setProductId(product.getId());
             item.setQuantity(reqItem.quantity());
@@ -70,7 +70,6 @@ public class RegisterOrderService {
                     LocalDateTime.now()
                 )
         );
-
         return savedOrder;
     }
 }
