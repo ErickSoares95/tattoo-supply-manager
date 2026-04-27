@@ -1,6 +1,6 @@
 package com.ericksoares.tattoo.notification.infrastructure.webhook;
 
-import com.ericksoares.tattoo.notification.application.port.NotificationSender;
+import com.ericksoares.tattoo.notification.application.listener.NotificationSender;
 import org.springframework.stereotype.Service;
 
 @Service

@@ -1,5 +1,6 @@
 package com.ericksoares.tattoo.order.application.service;
 
+import com.ericksoares.tattoo.order.application.dto.OrderItemData;
 import com.ericksoares.tattoo.order.application.dto.OrderRequest;
 import com.ericksoares.tattoo.order.domain.entity.Order;
 import com.ericksoares.tattoo.order.domain.entity.OrderItem;
@@ -8,15 +9,14 @@ import com.ericksoares.tattoo.order.infrasctruture.repository.OrderRepository;
 import com.ericksoares.tattoo.product.domain.entity.Product;
 import com.ericksoares.tattoo.product.domain.exception.ProductNotFoundException;
 import com.ericksoares.tattoo.product.infrastructure.repository.ProductRepository;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
-@Slf4j
 @Service
 public class RegisterOrderService {
 
@@ -38,7 +38,10 @@ public class RegisterOrderService {
     @Transactional
     public Order execute(OrderRequest request) {
 
-        List<OrderItem> items = request.items().stream().map(reqItem -> {
+        List<OrderItem> items = new ArrayList<>();
+        List<OrderItemData> eventItems = new ArrayList<>();
+
+        for (var reqItem : request.items()) {
 
             Product product = productRepository.findById(reqItem.productId())
                     .orElseThrow(() -> new ProductNotFoundException(reqItem.productId()));
@@ -52,9 +55,14 @@ public class RegisterOrderService {
 
             item.validate();
 
-            return item;
+            items.add(item);
 
-        }).toList();
+            eventItems.add(new OrderItemData(
+                    product.getId(),
+                    product.getName(),
+                    reqItem.quantity()
+            ));
+        }
 
         Order order = new Order();
         order.setItems(items);
@@ -66,10 +74,12 @@ public class RegisterOrderService {
 
         publisher.publishEvent(
                 new OrderRegisteredEvent(
-                    savedOrder.getId(),
-                    LocalDateTime.now()
+                        savedOrder.getId(),
+                        eventItems,
+                        LocalDateTime.now()
                 )
         );
+
         return savedOrder;
     }
 }

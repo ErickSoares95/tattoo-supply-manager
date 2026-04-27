@@ -1,6 +1,8 @@
 package com.ericksoares.tattoo.notification.listener;
 
+import com.ericksoares.tattoo.notification.application.dto.NotificationContext;
 import com.ericksoares.tattoo.notification.application.service.NotificationService;
+import com.ericksoares.tattoo.order.application.dto.OrderItemData;
 import com.ericksoares.tattoo.order.domain.event.OrderRegisteredEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -19,11 +21,24 @@ public class NotificationListener  {
     @Async("notificationExecutor")
     @EventListener
     public void handle(OrderRegisteredEvent event) {
+
+        log.info("Received OrderRegisteredEvent for order {}", event.orderId());
+        log.info("Processing in thread: {}", Thread.currentThread().getName());
+
         try {
-            notificationService.notifyOrderRegistered(event.orderId());
+            for (OrderItemData item : event.items()) {
+
+                NotificationContext context = new NotificationContext(
+                        event.orderId(),
+                        item.productName(),
+                        item.quantity()
+                );
+
+                notificationService.notifyOrderRegistered(context);
+            }
+
         } catch (Exception e) {
             log.error("Failed to process notification for order {}", event.orderId(), e);
-            log.info("Processing in thread: {}", Thread.currentThread().getName());
         }
     }
 }

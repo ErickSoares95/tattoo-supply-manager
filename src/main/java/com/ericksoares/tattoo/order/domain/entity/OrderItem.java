@@ -26,6 +26,4 @@ public class OrderItem {
             throw new InvalidOrderItemQuantityException();
         }
     }
-
-    // getters/setters
 }
