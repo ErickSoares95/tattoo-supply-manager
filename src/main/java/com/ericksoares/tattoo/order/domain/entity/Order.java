@@ -1,5 +1,6 @@
 package com.ericksoares.tattoo.order.domain.entity;
 
+import com.ericksoares.tattoo.order.domain.exception.EmptyOrderException;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -17,7 +18,6 @@ public class Order {
 
     @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "order_id")
-
     private List<OrderItem> items;
 
     private BigDecimal total;
@@ -30,7 +30,7 @@ public class Order {
 
     public void validate() {
         if (items == null || items.isEmpty()) {
-            throw new IllegalArgumentException("Order must have at least one item");
+            throw new EmptyOrderException();
         }
     }
 

@@ -1,5 +1,6 @@
 package com.ericksoares.tattoo.product.domain.entity;
 
+import com.ericksoares.tattoo.product.domain.exception.InsufficientStockException;
 import com.ericksoares.tattoo.product.domain.exception.InvalidProductNameException;
 import com.ericksoares.tattoo.product.domain.exception.InvalidProductPriceException;
 import com.ericksoares.tattoo.product.domain.exception.InvalidStockException;
@@ -37,7 +38,7 @@ public class Product {
 
     public void decreaseStock(int quantity) {
         if (stock < quantity) {
-            throw new RuntimeException("Estoque insuficiente");
+            throw new InsufficientStockException(this.name);
         }
         this.stock -= quantity;
     }

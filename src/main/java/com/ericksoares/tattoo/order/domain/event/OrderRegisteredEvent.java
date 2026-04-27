@@ -1,8 +1,8 @@
 package com.ericksoares.tattoo.order.domain.event;
 
-import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 public record OrderRegisteredEvent(
-        BigDecimal total,
-        int totalItems
+        Long orderId,
+        LocalDateTime occurredAt
 ) {}

@@ -1,5 +1,6 @@
 package com.ericksoares.tattoo.order.domain.entity;
 
+import com.ericksoares.tattoo.order.domain.exception.InvalidOrderItemQuantityException;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -22,7 +23,7 @@ public class OrderItem {
 
     public void validate() {
         if (quantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be greater than zero");
+            throw new InvalidOrderItemQuantityException();
         }
     }
 
