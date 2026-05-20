@@ -1,12 +1,14 @@
 package com.ericksoares.tattoo.notification.infrastructure.email;
 
 import com.ericksoares.tattoo.notification.application.listener.NotificationSender;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
-public class SendNotificationSender implements NotificationSender {
+@Slf4j
+public class EmailNotificationSender implements NotificationSender {
     @Override
     public void sendOrderRegistered(Long orderId) {
-        System.out.println("📧 Sending email for order: " + orderId);
+        log.info("Sending fake email for order {}", orderId);
     }
 }

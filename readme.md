@@ -164,7 +164,3 @@ https://github.com/ErickSoares95/tattoo-supply-manager
 
 Erick Soares
 Backend Developer focused on Java and Software Architecture
-
-💡 Final Note
-
-This is not just a project — it's an exploration of how to build systems that scale, evolve, and survive failure.
