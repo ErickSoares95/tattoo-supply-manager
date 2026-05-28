@@ -20,7 +20,10 @@ public class FindAllProductsService {
         this.repository = repository;
     }
 
-    public Page<ProductResponse> execute(ProductFilterRequest filter, Pageable pageable) {
+    public Page<ProductResponse> execute(
+            ProductFilterRequest filter,
+            Pageable pageable
+    ) {
 
         Specification<Product> spec = Specification.where(
                 ProductSpecification.nameContains(filter.name())

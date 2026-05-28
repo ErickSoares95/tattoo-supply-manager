@@ -1,20 +1,21 @@
 package com.ericksoares.tattoo.order.domain.entity;
 
 import com.ericksoares.tattoo.order.domain.exception.EmptyOrderException;
+import com.ericksoares.tattoo.shared.domain.entity.BaseEntity;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 @Entity
 @Table(name = "orders")
-@Data
-public class Order {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class Order extends BaseEntity {
 
     @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "order_id")
@@ -33,6 +34,4 @@ public class Order {
             throw new EmptyOrderException();
         }
     }
-
-    // getters/setters
 }

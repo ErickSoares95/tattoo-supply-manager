@@ -1,5 +1,6 @@
 package com.ericksoares.tattoo.notification.domain.entity;
 
+import com.ericksoares.tattoo.shared.domain.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -8,11 +9,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "failed_notifications")
 @Data
-public class FailedNotification {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class FailedNotification extends BaseEntity {
 
     private Long orderId;
     private String productName;

@@ -3,15 +3,16 @@ package com.ericksoares.tattoo.product.application.mapper;
 import com.ericksoares.tattoo.product.application.dto.ProductRequest;
 import com.ericksoares.tattoo.product.application.dto.ProductResponse;
 import com.ericksoares.tattoo.product.domain.entity.Product;
+import com.ericksoares.tattoo.user.domain.entity.User;
 
 public class ProductMapper {
 
     public static Product toEntity(ProductRequest request) {
-        Product product = new Product();
-        product.setName(request.name());
-        product.setPrice(request.price());
-        product.setStock(request.stock());
-        return product;
+        return Product.builder()
+                        .name(request.name())
+                        .price(request.price())
+                        .stock(request.stock())
+                        .build();
     }
 
     public static ProductResponse toResponse(Product product) {

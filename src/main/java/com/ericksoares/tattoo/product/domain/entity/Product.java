@@ -4,18 +4,20 @@ import com.ericksoares.tattoo.product.domain.exception.InsufficientStockExceptio
 import com.ericksoares.tattoo.product.domain.exception.InvalidProductNameException;
 import com.ericksoares.tattoo.product.domain.exception.InvalidProductPriceException;
 import com.ericksoares.tattoo.product.domain.exception.InvalidStockException;
+import com.ericksoares.tattoo.shared.domain.entity.BaseEntity;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.math.BigDecimal;
 
 @Entity
 @Table(name = "products")
-@Data
-public class Product {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class Product extends BaseEntity {
 
     private String name;
     private BigDecimal price;
