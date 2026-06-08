@@ -1,8 +1,8 @@
-package com.ericksoares.tattoo.user.service;
+package com.ericksoares.tattoo.user.application.service;
 
 import com.ericksoares.tattoo.shared.security.JwtService;
-import com.ericksoares.tattoo.user.application.dto.dto.request.LoginRequest;
-import com.ericksoares.tattoo.user.application.dto.dto.response.LoginResponse;
+import com.ericksoares.tattoo.user.application.dto.request.LoginRequest;
+import com.ericksoares.tattoo.user.application.dto.response.LoginResponse;
 import com.ericksoares.tattoo.user.domain.entity.User;
 import com.ericksoares.tattoo.user.domain.exception.InvalidCredentialsException;
 import com.ericksoares.tattoo.user.infrastructure.repositories.UserRepository;

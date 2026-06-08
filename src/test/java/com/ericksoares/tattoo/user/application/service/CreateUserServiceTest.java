@@ -1,13 +1,12 @@
 package com.ericksoares.tattoo.user.application.service;
 
-import com.ericksoares.tattoo.user.application.dto.dto.request.CreateUserRequest;
-import com.ericksoares.tattoo.user.application.dto.dto.response.UserResponse;
+import com.ericksoares.tattoo.user.application.dto.request.CreateUserRequest;
+import com.ericksoares.tattoo.user.application.dto.response.UserResponse;
 import com.ericksoares.tattoo.user.domain.entity.User;
 import com.ericksoares.tattoo.user.domain.enums.UserType;
 import com.ericksoares.tattoo.user.domain.exception.EmailAlreadyExistsException;
 import com.ericksoares.tattoo.user.infrastructure.repositories.UserRepository;
 import com.ericksoares.tattoo.user.mapper.UserMapper;
-import com.ericksoares.tattoo.user.service.CreateUserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

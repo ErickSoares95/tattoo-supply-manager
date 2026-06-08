@@ -1,4 +1,4 @@
-package com.ericksoares.tattoo.product.application;
+package com.ericksoares.tattoo.product.application.service;
 
 import com.ericksoares.tattoo.product.domain.entity.Product;
 import com.ericksoares.tattoo.product.domain.exception.ProductNotFoundException;

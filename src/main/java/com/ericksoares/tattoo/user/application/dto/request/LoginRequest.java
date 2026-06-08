@@ -1,4 +1,4 @@
-package com.ericksoares.tattoo.user.application.dto.dto.request;
+package com.ericksoares.tattoo.user.application.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

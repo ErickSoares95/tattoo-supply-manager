@@ -1,7 +1,7 @@
-package com.ericksoares.tattoo.user.service;
+package com.ericksoares.tattoo.user.application.service;
 
-import com.ericksoares.tattoo.user.application.dto.dto.request.UpdateUserRequest;
-import com.ericksoares.tattoo.user.application.dto.dto.response.UserResponse;
+import com.ericksoares.tattoo.user.application.dto.request.UpdateUserRequest;
+import com.ericksoares.tattoo.user.application.dto.response.UserResponse;
 import com.ericksoares.tattoo.user.mapper.UserMapper;
 import com.ericksoares.tattoo.user.domain.entity.User;
 import com.ericksoares.tattoo.user.domain.exception.UserNotFoundException;

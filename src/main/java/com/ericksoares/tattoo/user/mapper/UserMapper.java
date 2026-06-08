@@ -1,7 +1,7 @@
 package com.ericksoares.tattoo.user.mapper;
 
-import com.ericksoares.tattoo.user.application.dto.dto.request.CreateUserRequest;
-import com.ericksoares.tattoo.user.application.dto.dto.response.UserResponse;
+import com.ericksoares.tattoo.user.application.dto.request.CreateUserRequest;
+import com.ericksoares.tattoo.user.application.dto.response.UserResponse;
 import com.ericksoares.tattoo.user.domain.entity.User;
 import com.ericksoares.tattoo.user.domain.enums.UserStatus;
 

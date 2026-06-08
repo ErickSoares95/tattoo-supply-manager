@@ -1,10 +1,10 @@
 package com.ericksoares.tattoo.user.presentation.controller;
 
-import com.ericksoares.tattoo.user.application.dto.dto.request.CreateUserRequest;
-import com.ericksoares.tattoo.user.application.dto.dto.request.UpdateUserRequest;
-import com.ericksoares.tattoo.user.application.dto.dto.request.UserFilterRequest;
-import com.ericksoares.tattoo.user.application.dto.dto.response.UserResponse;
-import com.ericksoares.tattoo.user.service.*;
+import com.ericksoares.tattoo.user.application.dto.request.CreateUserRequest;
+import com.ericksoares.tattoo.user.application.dto.request.UpdateUserRequest;
+import com.ericksoares.tattoo.user.application.dto.request.UserFilterRequest;
+import com.ericksoares.tattoo.user.application.dto.response.UserResponse;
+import com.ericksoares.tattoo.user.application.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

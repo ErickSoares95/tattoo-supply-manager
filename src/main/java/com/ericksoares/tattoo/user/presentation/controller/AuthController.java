@@ -1,8 +1,8 @@
 package com.ericksoares.tattoo.user.presentation.controller;
 
-import com.ericksoares.tattoo.user.application.dto.dto.request.LoginRequest;
-import com.ericksoares.tattoo.user.application.dto.dto.response.LoginResponse;
-import com.ericksoares.tattoo.user.service.AuthenticateUserService;
+import com.ericksoares.tattoo.user.application.dto.request.LoginRequest;
+import com.ericksoares.tattoo.user.application.dto.response.LoginResponse;
+import com.ericksoares.tattoo.user.application.service.AuthenticateUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

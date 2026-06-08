@@ -1,5 +1,7 @@
-package com.ericksoares.tattoo.user.service;
+package com.ericksoares.tattoo.user.application.service;
 
+import com.ericksoares.tattoo.user.application.dto.response.UserResponse;
+import com.ericksoares.tattoo.user.mapper.UserMapper;
 import com.ericksoares.tattoo.user.domain.entity.User;
 import com.ericksoares.tattoo.user.domain.exception.UserNotFoundException;
 import com.ericksoares.tattoo.user.infrastructure.repositories.UserRepository;
@@ -9,18 +11,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
-public class DeleteUserService {
+@Transactional(readOnly = true)
+public class FindUserByIdService {
 
     private final UserRepository repository;
 
-    public void execute(Long id) {
+    public UserResponse execute(Long id) {
 
         User user = repository.findById(id)
-                .orElseThrow(() ->
-                        new UserNotFoundException(id)
-                );
+                .orElseThrow(() -> new UserNotFoundException(id));
 
-        repository.delete(user);
+        return UserMapper.toResponse(user);
     }
 }

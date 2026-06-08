@@ -1,6 +1,5 @@
 package com.ericksoares.tattoo.product.application.service;
 
-import com.ericksoares.tattoo.product.application.RegisterProductService;
 import com.ericksoares.tattoo.product.application.dto.request.ProductRequest;
 import com.ericksoares.tattoo.product.application.dto.response.ProductResponse;
 import com.ericksoares.tattoo.product.application.mapper.ProductMapper;

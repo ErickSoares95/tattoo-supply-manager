@@ -1,10 +1,10 @@
 package com.ericksoares.tattoo.product.presentation.controller;
 
-import com.ericksoares.tattoo.product.application.*;
 import com.ericksoares.tattoo.product.application.dto.request.ProductFilterRequest;
 import com.ericksoares.tattoo.product.application.dto.request.ProductRequest;
 import com.ericksoares.tattoo.product.application.dto.request.UpdateProductRequest;
 import com.ericksoares.tattoo.product.application.dto.response.ProductResponse;
+import com.ericksoares.tattoo.product.application.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

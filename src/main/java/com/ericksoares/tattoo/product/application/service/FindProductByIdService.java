@@ -1,6 +1,5 @@
-package com.ericksoares.tattoo.product.application;
+package com.ericksoares.tattoo.product.application.service;
 
-import com.ericksoares.tattoo.product.application.dto.request.UpdateProductRequest;
 import com.ericksoares.tattoo.product.application.dto.response.ProductResponse;
 import com.ericksoares.tattoo.product.application.mapper.ProductMapper;
 import com.ericksoares.tattoo.product.domain.entity.Product;
@@ -12,26 +11,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
-public class UpdateProductService {
+@Transactional(readOnly = true)
+public class FindProductByIdService {
 
     private final ProductRepository repository;
 
-    public ProductResponse execute(
-            Long id,
-            UpdateProductRequest request
-    ) {
+    public ProductResponse execute(Long id) {
 
         Product product = repository.findById(id)
-                .orElseThrow(() ->
-                        new ProductNotFoundException(id)
-                );
+                .orElseThrow(() -> new ProductNotFoundException(id));
 
-        product.setName(request.name());
-        product.setDescription(request.description());
-        product.setPrice(request.price());
-        product.setStock(request.stock());
-
-        return ProductMapper.toResponse(product);
+        return  ProductMapper.toResponse(product);
     }
 }
