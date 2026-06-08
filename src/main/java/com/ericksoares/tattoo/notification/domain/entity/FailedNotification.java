@@ -2,13 +2,18 @@ package com.ericksoares.tattoo.notification.domain.entity;
 
 import com.ericksoares.tattoo.shared.domain.entity.BaseEntity;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "failed_notifications")
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
 public class FailedNotification extends BaseEntity {
 
     private Long orderId;
@@ -20,6 +25,4 @@ public class FailedNotification extends BaseEntity {
     private LocalDateTime createdAt;
 
     private Boolean processed = false;
-
-    // getters/setters
 }

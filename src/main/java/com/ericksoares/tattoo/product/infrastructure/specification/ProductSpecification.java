@@ -30,4 +30,13 @@ public class ProductSpecification {
                 minStock == null ? null :
                         cb.greaterThanOrEqualTo(root.get("stock"), minStock);
     }
+
+    public static Specification<Product> descriptionContains(String description) {
+        return (root, query, cb) ->
+                description == null ? null :
+                        cb.like(
+                                cb.lower(root.get("description")),
+                                "%" + description.toLowerCase() + "%"
+                        );
+    }
 }

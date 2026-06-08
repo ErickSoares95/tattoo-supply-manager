@@ -7,6 +7,7 @@ import com.ericksoares.tattoo.product.domain.exception.InvalidStockException;
 import com.ericksoares.tattoo.shared.domain.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 
@@ -16,12 +17,20 @@ import java.math.BigDecimal;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
+@SuperBuilder
 public class Product extends BaseEntity {
 
+    @Column(nullable = false, length = 100)
     private String name;
+
+    @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
+
+    @Column(nullable = false)
     private Integer stock;
+
+    @Column(length = 500)
+    private String description;
 
     public void validate() {
 

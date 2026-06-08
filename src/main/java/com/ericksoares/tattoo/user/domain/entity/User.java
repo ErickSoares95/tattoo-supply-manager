@@ -3,21 +3,18 @@ package com.ericksoares.tattoo.user.domain.entity;
 import com.ericksoares.tattoo.shared.domain.entity.BaseEntity;
 import com.ericksoares.tattoo.user.domain.enums.UserStatus;
 import com.ericksoares.tattoo.user.domain.enums.UserType;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-
-import java.time.LocalDateTime;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "users")
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
-@Builder
+@AllArgsConstructor
+@SuperBuilder
 public class User extends BaseEntity {
 
     @Column(nullable = false, unique = true, length = 50)

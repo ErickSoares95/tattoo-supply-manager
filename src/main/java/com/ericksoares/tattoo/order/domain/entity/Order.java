@@ -4,17 +4,18 @@ import com.ericksoares.tattoo.order.domain.exception.EmptyOrderException;
 import com.ericksoares.tattoo.shared.domain.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 @Entity
 @Table(name = "orders")
-@Getter
-@Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
+@Getter
+@Setter
+@SuperBuilder
 public class Order extends BaseEntity {
 
     @OneToMany(cascade = CascadeType.ALL)

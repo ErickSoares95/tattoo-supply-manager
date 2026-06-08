@@ -1,17 +1,17 @@
 package com.ericksoares.tattoo.user.presentation.controller;
 
-import com.ericksoares.tattoo.user.application.dto.request.CreateUserRequest;
-import com.ericksoares.tattoo.user.application.dto.request.UserFilterRequest;
-import com.ericksoares.tattoo.user.application.dto.response.UserResponse;
-import com.ericksoares.tattoo.user.application.service.CreateUserService;
-import com.ericksoares.tattoo.user.application.service.FindAllUsersService;
-import com.ericksoares.tattoo.user.application.service.FindUserByIdService;
+import com.ericksoares.tattoo.user.application.dto.dto.request.CreateUserRequest;
+import com.ericksoares.tattoo.user.application.dto.dto.request.UpdateUserRequest;
+import com.ericksoares.tattoo.user.application.dto.dto.request.UserFilterRequest;
+import com.ericksoares.tattoo.user.application.dto.dto.response.UserResponse;
+import com.ericksoares.tattoo.user.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -23,6 +23,8 @@ public class UserController {
     private final FindAllUsersService findAllUsersService;
     private final FindUserByIdService findUserByIdService;
     private final CreateUserService createUserService;
+    private final UpdateUserService updateUserService;
+    private final DeleteUserService deleteUserService;
 
     @GetMapping
     public ResponseEntity<Page<UserResponse>> findAll(
@@ -54,6 +56,29 @@ public class UserController {
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(response);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{id}")
+    public ResponseEntity<UserResponse> update(
+            @PathVariable Long id,
+            @RequestBody @Valid UpdateUserRequest request
+    ) {
+
+        return ResponseEntity.ok(
+                updateUserService.execute(id, request)
+        );
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(
+            @PathVariable Long id
+    ) {
+
+        deleteUserService.execute(id);
+
+        return ResponseEntity.noContent().build();
     }
 
 }
