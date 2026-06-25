@@ -27,6 +27,7 @@ public class UserController {
     private final DeleteUserService deleteUserService;
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<UserResponse>> findAll(
             @ModelAttribute UserFilterRequest filter,
             Pageable pageable
@@ -37,6 +38,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> findById(
             @PathVariable Long id
     ) {
