@@ -1,4 +1,4 @@
-package com.ericksoares.tattoo.notification.listener;
+package com.ericksoares.tattoo.notification.event;
 
 import com.ericksoares.tattoo.notification.application.dto.NotificationContext;
 import com.ericksoares.tattoo.notification.application.service.NotificationService;

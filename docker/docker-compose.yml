@@ -10,6 +10,13 @@ services:
       POSTGRES_PASSWORD: tattoo_pass
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tattoo_user -d tattoo-supply-manager-db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   app:
     build:
@@ -19,8 +26,12 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/tattoo-supply-manager-db
       SPRING_DATASOURCE_USERNAME: tattoo_user
       SPRING_DATASOURCE_PASSWORD: tattoo_pass
+
+volumes:
+  postgres_data:
