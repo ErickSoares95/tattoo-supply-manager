@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/tattoo-supply-manager-db
+    username: tattoo_user
+    password: tattoo_pass
+  jpa:
+    hibernate:
+      ddl-auto: update

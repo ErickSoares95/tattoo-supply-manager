@@ -35,6 +35,8 @@ public class UpdateUserService {
         user.setUserType(request.userType());
         user.setUserStatus(request.userStatus());
 
+        repository.save(user);
+
         return UserMapper.toResponse(user);
     }
 }

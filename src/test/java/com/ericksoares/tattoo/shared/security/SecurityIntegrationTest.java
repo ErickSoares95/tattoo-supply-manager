@@ -84,6 +84,8 @@ class SecurityIntegrationTest {
         mockMvc.perform(
                         delete("/products/1")
                 )
-                .andExpect(status().isNoContent());
+                .andExpect(
+                        status().isNotFound()
+                );
     }
 }

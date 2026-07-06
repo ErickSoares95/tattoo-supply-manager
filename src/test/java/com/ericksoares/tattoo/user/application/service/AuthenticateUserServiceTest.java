@@ -13,11 +13,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,17 +37,15 @@ class AuthenticateUserServiceTest {
     @Mock
     private JwtService jwtService;
 
+    @Mock
+    private AuthenticationManager authenticationManager;
+
     @InjectMocks
     private AuthenticateUserService service;
 
     @Test
     void shouldAuthenticateSuccessfully() {
-
-        LoginRequest request =
-                new LoginRequest(
-                        "admin@email.com",
-                        "123456"
-                );
+        LoginRequest request = new LoginRequest("admin@email.com", "123456");
 
         User user = User.builder()
                 .email("admin@email.com")
@@ -51,19 +54,18 @@ class AuthenticateUserServiceTest {
                 .userStatus(UserStatus.ACTIVE)
                 .build();
 
+        Authentication mockAuthentication = mock(Authentication.class);
+
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(mockAuthentication);
+
         when(repository.findByEmail(request.email()))
                 .thenReturn(Optional.of(user));
-
-        when(passwordEncoder.matches(
-                request.password(),
-                user.getPassword()
-        )).thenReturn(true);
 
         when(jwtService.generateToken(user))
                 .thenReturn("jwt-token");
 
-        LoginResponse response =
-                service.execute(request);
+        LoginResponse response = service.execute(request);
 
         assertNotNull(response);
         assertEquals("jwt-token", response.token());
@@ -71,15 +73,10 @@ class AuthenticateUserServiceTest {
 
     @Test
     void shouldThrowWhenEmailNotFound() {
+        LoginRequest request = new LoginRequest("wrong@email.com", "123456");
 
-        LoginRequest request =
-                new LoginRequest(
-                        "wrong@email.com",
-                        "123456"
-                );
-
-        when(repository.findByEmail(request.email()))
-                .thenReturn(Optional.empty());
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenThrow(new BadCredentialsException("Bad credentials"));
 
         assertThrows(
                 InvalidCredentialsException.class,
@@ -89,25 +86,10 @@ class AuthenticateUserServiceTest {
 
     @Test
     void shouldThrowWhenPasswordIsInvalid() {
+        LoginRequest request = new LoginRequest("admin@email.com", "wrong");
 
-        LoginRequest request =
-                new LoginRequest(
-                        "admin@email.com",
-                        "wrong"
-                );
-
-        User user = User.builder()
-                .email("admin@email.com")
-                .password("encoded")
-                .build();
-
-        when(repository.findByEmail(request.email()))
-                .thenReturn(Optional.of(user));
-
-        when(passwordEncoder.matches(
-                request.password(),
-                user.getPassword()
-        )).thenReturn(false);
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenThrow(new BadCredentialsException("Bad credentials"));
 
         assertThrows(
                 InvalidCredentialsException.class,

@@ -3,8 +3,8 @@ spring:
     name: tattoo-supply-manager
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/tattoo-supply-manager-db}
-    username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:admin}
+    username: ${SPRING_DATASOURCE_USERNAME:tattoo_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:tattoo_pass}
   jpa:
     hibernate:
       ddl-auto: update

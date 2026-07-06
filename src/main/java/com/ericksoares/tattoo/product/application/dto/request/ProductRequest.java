@@ -9,9 +9,8 @@ public record ProductRequest(
         @NotBlank(message = "Name is required")
         String name,
 
-        @NotBlank
-        @Min(value = (3), message = "Description cannot be shorter than 10")
-        @Max(500)
+        @NotBlank(message = "Description is required")
+        @Size(min = 10, max = 500, message = "Description must be between 10 and 500 characters")
         String description,
 
         @NotNull(message = "Price is required")

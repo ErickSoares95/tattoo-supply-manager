@@ -10,19 +10,24 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verify;
-import static org.mockito.ArgumentMatchers.any;
+import org.springframework.context.ApplicationEventPublisher; // 🔥 Import adicionado
 
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 class RegisterProductServiceTest {
 
     @Mock
     private ProductRepository repository;
+
+    @Mock
+    private ApplicationEventPublisher publisher;
 
     @InjectMocks
     private RegisterProductService service;
@@ -51,5 +56,7 @@ class RegisterProductServiceTest {
 
         verify(repository)
                 .save(any(Product.class));
+
+        verify(publisher, times(1)).publishEvent(any(Object.class));
     }
 }

@@ -6,35 +6,35 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional; // 🔥 Import adicionado
+
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Transactional
 class UserControllerIT {
 
     @Autowired
     private MockMvc mockMvc;
 
     @Test
-    void shouldCreateUserWithoutAuthentication()
-            throws Exception {
+    void shouldCreateUserWithoutAuthentication() throws Exception {
 
         String json = """
                 {
-                  "username":"admin",
-                  "email":"admin@tattoo.com",
-                  "password":"123456",
+                  "username":"adminxx",
+                  "email":"mentira@tattoo.com",
+                  "password":"Senha1234",
                   "fullName":"Administrador",
                   "userType":"ADMIN"
                 }
                 """;
 
         mockMvc.perform(
-                        post("/auth/register")
-                                .contentType(
-                                        MediaType.APPLICATION_JSON
-                                )
+                        post("/users")
+                                .contentType(MediaType.APPLICATION_JSON)
                                 .content(json)
                 )
                 .andExpect(

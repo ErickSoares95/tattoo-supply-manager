@@ -1,22 +1,32 @@
 package com.ericksoares.tattoo.product.presentation;
 
+import com.ericksoares.tattoo.product.domain.entity.Product;
+import com.ericksoares.tattoo.product.infrastructure.repository.ProductRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Transactional
 class ProductControllerIT {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ProductRepository productRepository;
 
     @Test
     void shouldReturnUnauthorizedWhenNoToken() throws Exception {
@@ -86,20 +96,17 @@ class ProductControllerIT {
     }
 
     @Test
-    @WithMockUser(
-            username = "admin",
-            roles = {"ADMIN"}
-    )
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
     void shouldAllowAdminCreateProduct() throws Exception {
 
         String request = """
-            {
-              "name":"Ink Black",
-              "description":"Black tattoo ink",
-              "price":99.90,
-              "stock":10
-            }
-            """;
+        {
+          "name":"Ink Black",
+          "description":"Black tattoo ink",
+          "price":99.90,
+          "stock":10
+        }
+        """;
 
         mockMvc.perform(
                         post("/products")
@@ -133,8 +140,17 @@ class ProductControllerIT {
     )
     void shouldAllowAdminDeleteProduct() throws Exception {
 
+        Product product = Product.builder()
+                .name("Agulha 0rlrl")
+                .price(new BigDecimal("15.00"))
+                .stock(50)
+                .build();
+
+        product = productRepository.save(product);
+
+
         mockMvc.perform(
-                        delete("/products/1")
+                        delete("/products/" + product.getId())
                 )
                 .andExpect(
                         status().isNoContent()

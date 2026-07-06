@@ -72,7 +72,7 @@ class RegisterOrderServiceTest {
                 .save(any(Order.class));
 
         verify(publisher)
-                .publishEvent(any());
+                .publishEvent(any(Object.class));
     }
 
     @Test
