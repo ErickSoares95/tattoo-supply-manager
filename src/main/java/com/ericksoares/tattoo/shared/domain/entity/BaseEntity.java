@@ -27,15 +27,4 @@ public abstract class BaseEntity {
     @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime lastUpdateDate;
-
-    @PrePersist
-    protected void onCreate() {
-        creationDate = LocalDateTime.now();
-        lastUpdateDate = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        lastUpdateDate = LocalDateTime.now();
-    }
 }

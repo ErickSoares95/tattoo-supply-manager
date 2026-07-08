@@ -4,6 +4,7 @@ import com.ericksoares.tattoo.user.application.dto.request.CreateUserRequest;
 import com.ericksoares.tattoo.user.application.dto.response.UserResponse;
 import com.ericksoares.tattoo.user.domain.entity.User;
 import com.ericksoares.tattoo.user.domain.enums.UserStatus;
+import com.ericksoares.tattoo.user.domain.enums.UserType;
 
 public class UserMapper {
 
@@ -20,7 +21,7 @@ public class UserMapper {
                 .cpf(request.cpf())
                 .imageUrl(request.imageUrl())
                 .userStatus(UserStatus.ACTIVE)
-                .userType(request.userType())
+                .userType(UserType.CLIENT)
                 .build();
     }
 

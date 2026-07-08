@@ -34,13 +34,17 @@ public class NotificationReprocessService {
                         failure.getQuantity()
                 );
 
-                notificationService.notifyOrderRegistered(context);
+                boolean succeeded = notificationService.notifyOrderRegistered(context);
 
-                failure.setProcessed(true);
-                repository.save(failure);
+                if (succeeded) {
+                    failure.setProcessed(true);
+                    repository.save(failure);
+                } else {
+                    log.warn("Reprocess failed again for id {}", failure.getId());
+                }
 
             } catch (Exception e) {
-                log.error("Retry failed again for id {}", failure.getId(), e);
+                log.error("Unexpected error reprocessing id {}", failure.getId(), e);
             }
         }
     }

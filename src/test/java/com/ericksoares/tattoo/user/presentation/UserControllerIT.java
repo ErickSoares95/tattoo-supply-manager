@@ -9,6 +9,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional; // 🔥 Import adicionado
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 @SpringBootTest
@@ -27,8 +28,7 @@ class UserControllerIT {
                   "username":"adminxx",
                   "email":"mentira@tattoo.com",
                   "password":"Senha1234",
-                  "fullName":"Administrador",
-                  "userType":"ADMIN"
+                  "fullName":"Administrador"
                 }
                 """;
 
@@ -39,6 +39,9 @@ class UserControllerIT {
                 )
                 .andExpect(
                         status().isCreated()
+                )
+                .andExpect(
+                        jsonPath("$.userType").value("CLIENT")
                 );
     }
 }

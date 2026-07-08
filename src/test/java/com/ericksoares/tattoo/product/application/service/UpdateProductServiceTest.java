@@ -2,6 +2,7 @@ package com.ericksoares.tattoo.product.application.service;
 
 import com.ericksoares.tattoo.product.application.dto.request.UpdateProductRequest;
 import com.ericksoares.tattoo.product.domain.entity.Product;
+import com.ericksoares.tattoo.product.domain.exception.InvalidProductPriceException;
 import com.ericksoares.tattoo.product.domain.exception.ProductNotFoundException;
 import com.ericksoares.tattoo.product.infrastructure.repository.ProductRepository;
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,34 @@ class UpdateProductServiceTest {
 
         // 🔥 Alterado para validar o salvamento sem travar na igualdade estrita do objeto
         verify(repository).save(any(Product.class));
+    }
+
+    @Test
+    void shouldThrowWhenUpdatedPriceIsInvalid() {
+
+        Product product = Product.builder()
+                .name("Old Product")
+                .price(BigDecimal.valueOf(50))
+                .stock(10)
+                .build();
+
+        UpdateProductRequest request =
+                new UpdateProductRequest(
+                        "New Product",
+                        "New Description",
+                        BigDecimal.ZERO,
+                        20
+                );
+
+        when(repository.findById(1L))
+                .thenReturn(Optional.of(product));
+
+        assertThrows(
+                InvalidProductPriceException.class,
+                () -> service.execute(1L, request)
+        );
+
+        verify(repository, never()).save(any());
     }
 
     @Test

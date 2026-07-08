@@ -33,6 +33,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/tattoo-supply-manager-db
       SPRING_DATASOURCE_USERNAME: tattoo_user
       SPRING_DATASOURCE_PASSWORD: tattoo_pass
+      JWT_SECRET: local-dev-jwt-secret-troque-em-producao-32chars+
 
   prometheus:
     image: prom/prometheus:latest

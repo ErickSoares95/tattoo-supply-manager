@@ -2,6 +2,8 @@ package com.ericksoares.tattoo.order.application.service;
 
 import com.ericksoares.tattoo.order.application.dto.OrderItemData;
 import com.ericksoares.tattoo.order.application.dto.OrderRequest;
+import com.ericksoares.tattoo.order.application.dto.OrderResponse;
+import com.ericksoares.tattoo.order.application.mapper.OrderMapper;
 import com.ericksoares.tattoo.order.domain.entity.Order;
 import com.ericksoares.tattoo.order.domain.entity.OrderItem;
 import com.ericksoares.tattoo.order.domain.event.OrderRegisteredEvent;
@@ -36,7 +38,7 @@ public class RegisterOrderService {
     }
 
     @Transactional
-    public Order execute(OrderRequest request) {
+    public OrderResponse execute(OrderRequest request, Long userId) {
 
         List<OrderItem> items = new ArrayList<>();
         List<OrderItemData> eventItems = new ArrayList<>();
@@ -46,14 +48,14 @@ public class RegisterOrderService {
             Product product = productRepository.findById(reqItem.productId())
                     .orElseThrow(() -> new ProductNotFoundException(reqItem.productId()));
 
-            product.decreaseStock(reqItem.quantity());
-
             OrderItem item = new OrderItem();
             item.setProductId(product.getId());
             item.setQuantity(reqItem.quantity());
             item.setPrice(product.getPrice());
 
             item.validate();
+
+            product.decreaseStock(reqItem.quantity());
 
             items.add(item);
 
@@ -66,6 +68,7 @@ public class RegisterOrderService {
 
         Order order = new Order();
         order.setItems(items);
+        order.setUserId(userId);
 
         order.validate();
         order.calculateTotal();
@@ -80,6 +83,6 @@ public class RegisterOrderService {
                 )
         );
 
-        return savedOrder;
+        return OrderMapper.toResponse(savedOrder);
     }
 }

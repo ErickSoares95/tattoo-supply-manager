@@ -1,6 +1,5 @@
 package com.ericksoares.tattoo.user.application.dto.request;
 
-import com.ericksoares.tattoo.user.domain.enums.UserType;
 import jakarta.validation.constraints.*;
 
 public record CreateUserRequest(
@@ -36,9 +35,7 @@ public record CreateUserRequest(
         String cpf,
 
         @Size(max = 255)
-        String imageUrl,
-
-        @NotNull
-        UserType userType
+        String imageUrl
 ) {
 }
+

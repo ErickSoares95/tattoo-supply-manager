@@ -2,7 +2,9 @@ package com.ericksoares.tattoo.order.application.service;
 
 import com.ericksoares.tattoo.order.application.dto.OrderItemRequest;
 import com.ericksoares.tattoo.order.application.dto.OrderRequest;
+import com.ericksoares.tattoo.order.application.dto.OrderResponse;
 import com.ericksoares.tattoo.order.domain.entity.Order;
+import com.ericksoares.tattoo.order.domain.exception.InvalidOrderItemQuantityException;
 import com.ericksoares.tattoo.order.infrasctruture.repository.OrderRepository;
 import com.ericksoares.tattoo.product.domain.entity.Product;
 import com.ericksoares.tattoo.product.domain.exception.ProductNotFoundException;
@@ -61,9 +63,11 @@ class RegisterOrderServiceTest {
         when(orderRepository.save(any(Order.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Order order = service.execute(request);
+        OrderResponse order = service.execute(request, 1L);
 
         assertNotNull(order);
+
+        assertEquals(1L, order.userId());
 
         verify(productRepository)
                 .findById(1L);
@@ -92,7 +96,7 @@ class RegisterOrderServiceTest {
 
         assertThrows(
                 ProductNotFoundException.class,
-                () -> service.execute(request)
+                () -> service.execute(request, 1L)
         );
 
         verify(orderRepository, never())
@@ -127,11 +131,50 @@ class RegisterOrderServiceTest {
         when(orderRepository.save(any(Order.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        service.execute(request);
+        service.execute(request, 1L);
 
         assertEquals(
                 7,
                 product.getStock()
         );
+    }
+
+    @Test
+    void shouldThrowAndNotDecreaseStockWhenQuantityIsInvalid() {
+
+        Product product = Product.builder()
+                .id(1L)
+                .name("Tinta Black")
+                .price(BigDecimal.valueOf(50))
+                .stock(10)
+                .build();
+
+        OrderRequest request = new OrderRequest(
+                List.of(
+                        new OrderItemRequest(
+                                1L,
+                                0
+                        )
+                )
+        );
+
+        when(productRepository.findById(1L))
+                .thenReturn(Optional.of(product));
+
+        assertThrows(
+                InvalidOrderItemQuantityException.class,
+                () -> service.execute(request, 1L)
+        );
+
+        assertEquals(
+                10,
+                product.getStock()
+        );
+
+        verify(orderRepository, never())
+                .save(any());
+
+        verify(publisher, never())
+                .publishEvent(any());
     }
 }

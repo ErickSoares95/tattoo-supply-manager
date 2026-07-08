@@ -50,12 +50,11 @@ public class GlobalExceptionHandler {
         log.error("Unexpected error", ex);
 
         ErrorResponse error = new ErrorResponse(
-                500,
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Internal server error",
                 null
         );
-
-        return ResponseEntity.status(500).body(error);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

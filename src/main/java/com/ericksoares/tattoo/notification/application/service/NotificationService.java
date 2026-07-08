@@ -2,15 +2,9 @@ package com.ericksoares.tattoo.notification.application.service;
 
 import com.ericksoares.tattoo.notification.application.dto.NotificationContext;
 import com.ericksoares.tattoo.notification.application.listener.NotificationSender;
-import com.ericksoares.tattoo.notification.domain.entity.FailedNotification;
-import com.ericksoares.tattoo.notification.domain.repository.FailedNotificationRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Recover;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -18,51 +12,39 @@ import java.util.List;
 public class NotificationService {
 
     private final List<NotificationSender> senders;
-    private final FailedNotificationRepository failedRepository;
+    private final NotificationSenderExecutor executor;
 
-    public NotificationService(List<NotificationSender> senders, FailedNotificationRepository failedRepository) {
+    public NotificationService(List<NotificationSender> senders, NotificationSenderExecutor executor) {
         this.senders = senders;
-        this.failedRepository = failedRepository;
+        this.executor = executor;
     }
 
-    @Retryable(
-            value = Exception.class,
-            maxAttempts = 3,
-            backoff = @Backoff(delay = 2000)
-    )
-    public void notifyOrderRegistered(NotificationContext context) {
+    public boolean notifyOrderRegistered(NotificationContext context) {
+
         log.info(
                 "Sending notification for order {}",
                 context.orderId()
         );
+
+        boolean allSucceeded = true;
+
         for (NotificationSender sender : senders) {
-            sender.sendOrderRegistered(context.orderId());
+
+            try {
+                executor.send(sender, context.orderId());
+            } catch (Exception e) {
+                allSucceeded = false;
+                log.error(
+                        "FINAL FAILURE - sender: {}, orderId: {}, product: {}, quantity: {}",
+                        sender.getClass().getSimpleName(),
+                        context.orderId(),
+                        context.productName(),
+                        context.quantity(),
+                        e
+                );
+            }
         }
-    }
 
-    @Recover
-    public void recover(Exception e, NotificationContext context) {
-        log.error(
-                "FINAL FAILURE - orderId: {}, product: {}, quantity: {}",
-                context.orderId(),
-                context.productName(),
-                context.quantity(),
-                e
-        );
-        FailedNotification failure = new FailedNotification();
-
-        failure.setOrderId(context.orderId());
-        failure.setProductName(context.productName());
-        failure.setQuantity(context.quantity());
-        failure.setErrorMessage(e.getMessage());
-        failure.setCreatedAt(LocalDateTime.now());
-        failure.setProcessed(false);
-
-        failedRepository.save(failure);
-
-        log.warn(
-                "Failed notification persisted for order {}",
-                context.orderId()
-        );
+        return allSucceeded;
     }
 }

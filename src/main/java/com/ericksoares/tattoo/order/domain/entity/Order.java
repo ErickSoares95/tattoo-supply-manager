@@ -24,6 +24,8 @@ public class Order extends BaseEntity {
 
     private BigDecimal total;
 
+    private Long userId;
+
     public void calculateTotal() {
         this.total = items.stream()
                 .map(OrderItem::getSubtotal)

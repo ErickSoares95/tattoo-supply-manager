@@ -46,10 +46,10 @@ class SecurityIntegrationTest {
 
     @Test
     @WithMockUser(
-            username = "employee",
-            roles = {"EMPLOYEE"}
+            username = "attendant",
+            roles = {"ATTENDANT"}
     )
-    void shouldAllowEmployeeAccess() throws Exception {
+    void shouldAllowAttendantAccess() throws Exception {
 
         mockMvc.perform(
                         get("/products")
@@ -61,10 +61,10 @@ class SecurityIntegrationTest {
 
     @Test
     @WithMockUser(
-            username = "employee",
-            roles = {"EMPLOYEE"}
+            username = "attendant",
+            roles = {"ATTENDANT"}
     )
-    void shouldDenyEmployeeDeleteProduct() throws Exception {
+    void shouldDenyAttendantDeleteProduct() throws Exception {
 
         mockMvc.perform(
                         delete("/products/1")

@@ -32,6 +32,8 @@ public class UpdateProductService {
         product.setPrice(request.price());
         product.setStock(request.stock());
 
+        product.validate();
+
         repository.save(product);
 
         return ProductMapper.toResponse(product);

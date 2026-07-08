@@ -21,7 +21,10 @@ class JwtServiceTest {
     @BeforeEach
     void setup() {
 
-        jwtService = new JwtService();
+        jwtService = new JwtService(
+                "test-secret-key-apenas-para-testes-unitarios-32chars+",
+                1000 * 60 * 60 * 24
+        );
 
         user = User.builder()
                 .email("admin@tattoo.com")

@@ -4,6 +4,7 @@ import com.ericksoares.tattoo.user.application.dto.request.UpdateUserRequest;
 import com.ericksoares.tattoo.user.domain.entity.User;
 import com.ericksoares.tattoo.user.domain.enums.UserStatus;
 import com.ericksoares.tattoo.user.domain.enums.UserType;
+import com.ericksoares.tattoo.user.domain.exception.LastAdminException;
 import com.ericksoares.tattoo.user.domain.exception.UserNotFoundException;
 import com.ericksoares.tattoo.user.infrastructure.repositories.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -74,5 +75,72 @@ class UpdateUserServiceTest {
                 UserNotFoundException.class,
                 () -> service.execute(1L, request)
         );
+    }
+
+    @Test
+    void shouldThrowWhenDemotingTheLastActiveAdmin() {
+
+        User user = User.builder()
+                .id(1L)
+                .username("admin")
+                .userType(UserType.ADMIN)
+                .userStatus(UserStatus.ACTIVE)
+                .build();
+
+        UpdateUserRequest request =
+                new UpdateUserRequest(
+                        "admin",
+                        "Admin",
+                        null,
+                        null,
+                        null,
+                        UserType.CLIENT,
+                        UserStatus.ACTIVE
+                );
+
+        when(repository.findById(1L))
+                .thenReturn(Optional.of(user));
+
+        when(repository.countByUserTypeAndUserStatus(UserType.ADMIN, UserStatus.ACTIVE))
+                .thenReturn(1L);
+
+        assertThrows(
+                LastAdminException.class,
+                () -> service.execute(1L, request)
+        );
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void shouldAllowDemotingAdminWhenAnotherActiveAdminExists() {
+
+        User user = User.builder()
+                .id(1L)
+                .username("admin")
+                .userType(UserType.ADMIN)
+                .userStatus(UserStatus.ACTIVE)
+                .build();
+
+        UpdateUserRequest request =
+                new UpdateUserRequest(
+                        "admin",
+                        "Admin",
+                        null,
+                        null,
+                        null,
+                        UserType.CLIENT,
+                        UserStatus.ACTIVE
+                );
+
+        when(repository.findById(1L))
+                .thenReturn(Optional.of(user));
+
+        when(repository.countByUserTypeAndUserStatus(UserType.ADMIN, UserStatus.ACTIVE))
+                .thenReturn(2L);
+
+        service.execute(1L, request);
+
+        verify(repository).save(user);
     }
 }

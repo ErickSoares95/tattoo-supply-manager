@@ -13,7 +13,8 @@ public record UpdateProductRequest(
         String description,
 
         @NotNull
-        @DecimalMin("0.0")
+        @Positive
+        @DecimalMin("0.01")
         BigDecimal price,
 
         @NotNull

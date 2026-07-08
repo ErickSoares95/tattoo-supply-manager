@@ -5,6 +5,7 @@ import com.ericksoares.tattoo.user.application.dto.response.UserResponse;
 import com.ericksoares.tattoo.user.domain.entity.User;
 import com.ericksoares.tattoo.user.domain.enums.UserType;
 import com.ericksoares.tattoo.user.domain.exception.EmailAlreadyExistsException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.ericksoares.tattoo.user.infrastructure.repositories.UserRepository;
 import com.ericksoares.tattoo.user.mapper.UserMapper;
 import org.junit.jupiter.api.Test;
@@ -40,8 +41,7 @@ class CreateUserServiceTest {
                         "Administrador",
                         null,
                         null,
-                        null,
-                        UserType.ADMIN
+                        null
                 );
 
         User user =
@@ -64,6 +64,11 @@ class CreateUserServiceTest {
 
         assertNotNull(response);
 
+        assertEquals(
+                UserType.CLIENT,
+                user.getUserType()
+        );
+
         verify(repository)
                 .save(any(User.class));
     }
@@ -79,8 +84,7 @@ class CreateUserServiceTest {
                         "Administrador",
                         null,
                         null,
-                        null,
-                        UserType.ADMIN
+                        null
                 );
 
         when(repository.existsByEmail(any()))

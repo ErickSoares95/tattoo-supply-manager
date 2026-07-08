@@ -2,6 +2,7 @@ package com.ericksoares.tattoo.notification.presentation.controller;
 
 import com.ericksoares.tattoo.notification.application.service.NotificationReprocessService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +20,7 @@ public class NotificationController {
     }
 
     @PostMapping("/reprocess")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> reprocess() {
         service.reprocessAll();
         return ResponseEntity.ok().build();
