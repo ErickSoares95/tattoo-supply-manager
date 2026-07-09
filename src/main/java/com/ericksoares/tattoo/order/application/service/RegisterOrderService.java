@@ -50,6 +50,7 @@ public class RegisterOrderService {
 
             OrderItem item = new OrderItem();
             item.setProductId(product.getId());
+            item.setProductName(product.getName());
             item.setQuantity(reqItem.quantity());
             item.setPrice(product.getPrice());
 

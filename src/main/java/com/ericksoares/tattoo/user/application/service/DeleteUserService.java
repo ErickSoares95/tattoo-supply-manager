@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DeleteUserService {
 
     private final UserRepository repository;
+    private final LastAdminGuard lastAdminGuard;
 
     public void execute(Long id) {
 
@@ -20,6 +21,8 @@ public class DeleteUserService {
                 .orElseThrow(() ->
                         new UserNotFoundException(id)
                 );
+
+        lastAdminGuard.ensureNotRemovingLastAdmin(user, false);
 
         repository.delete(user);
     }

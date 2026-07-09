@@ -24,6 +24,9 @@ class UpdateUserServiceTest {
     @Mock
     private UserRepository repository;
 
+    @Mock
+    private LastAdminGuard lastAdminGuard;
+
     @InjectMocks
     private UpdateUserService service;
 
@@ -78,7 +81,7 @@ class UpdateUserServiceTest {
     }
 
     @Test
-    void shouldThrowWhenDemotingTheLastActiveAdmin() {
+    void shouldThrowWhenLastAdminGuardRejectsTheChange() {
 
         User user = User.builder()
                 .id(1L)
@@ -101,8 +104,9 @@ class UpdateUserServiceTest {
         when(repository.findById(1L))
                 .thenReturn(Optional.of(user));
 
-        when(repository.countByUserTypeAndUserStatus(UserType.ADMIN, UserStatus.ACTIVE))
-                .thenReturn(1L);
+        doThrow(new LastAdminException())
+                .when(lastAdminGuard)
+                .ensureNotRemovingLastAdmin(user, false);
 
         assertThrows(
                 LastAdminException.class,
@@ -113,7 +117,7 @@ class UpdateUserServiceTest {
     }
 
     @Test
-    void shouldAllowDemotingAdminWhenAnotherActiveAdminExists() {
+    void shouldAllowUpdateWhenLastAdminGuardDoesNotReject() {
 
         User user = User.builder()
                 .id(1L)
@@ -136,11 +140,9 @@ class UpdateUserServiceTest {
         when(repository.findById(1L))
                 .thenReturn(Optional.of(user));
 
-        when(repository.countByUserTypeAndUserStatus(UserType.ADMIN, UserStatus.ACTIVE))
-                .thenReturn(2L);
-
         service.execute(1L, request);
 
+        verify(lastAdminGuard).ensureNotRemovingLastAdmin(user, false);
         verify(repository).save(user);
     }
 }

@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 @SuperBuilder
 public class OrderItem extends BaseEntity {
     private Long productId;
+    private String productName;
     private Integer quantity;
     private BigDecimal price;
 

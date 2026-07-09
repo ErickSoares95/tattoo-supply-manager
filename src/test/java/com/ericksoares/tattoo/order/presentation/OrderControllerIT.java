@@ -76,6 +76,7 @@ class OrderControllerIT {
     private Order createOrder(Long userId, Long productId) {
         OrderItem item = new OrderItem();
         item.setProductId(productId);
+        item.setProductName("Tinta Black");
         item.setQuantity(1);
         item.setPrice(BigDecimal.TEN);
 

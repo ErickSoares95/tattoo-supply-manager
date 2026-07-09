@@ -13,6 +13,7 @@ public record UserResponse(
         UserStatus userStatus,
         UserType userType,
         String phoneNumber,
+        String cpf,
         String imageUrl,
         LocalDateTime creationDate
 ) {

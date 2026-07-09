@@ -12,6 +12,7 @@ public class OrderMapper {
     public static OrderItemResponse toResponse(OrderItem item) {
         return new OrderItemResponse(
                 item.getProductId(),
+                item.getProductName(),
                 item.getQuantity(),
                 item.getPrice(),
                 item.getSubtotal()

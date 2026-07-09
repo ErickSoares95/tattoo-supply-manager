@@ -35,6 +35,7 @@ public class UserMapper {
                 user.getUserStatus(),
                 user.getUserType(),
                 user.getPhoneNumber(),
+                user.getCpf(),
                 user.getImageUrl(),
                 user.getCreationDate()
         );

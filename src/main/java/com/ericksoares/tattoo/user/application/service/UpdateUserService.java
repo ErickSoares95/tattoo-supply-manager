@@ -6,7 +6,6 @@ import com.ericksoares.tattoo.user.mapper.UserMapper;
 import com.ericksoares.tattoo.user.domain.entity.User;
 import com.ericksoares.tattoo.user.domain.enums.UserStatus;
 import com.ericksoares.tattoo.user.domain.enums.UserType;
-import com.ericksoares.tattoo.user.domain.exception.LastAdminException;
 import com.ericksoares.tattoo.user.domain.exception.UserNotFoundException;
 import com.ericksoares.tattoo.user.infrastructure.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UpdateUserService {
 
     private final UserRepository repository;
+    private final LastAdminGuard lastAdminGuard;
 
     public UserResponse execute(
             Long id,
@@ -30,7 +30,10 @@ public class UpdateUserService {
                         new UserNotFoundException(id)
                 );
 
-        validateNotRemovingLastAdmin(user, request);
+        boolean willRemainActiveAdmin = request.userType() == UserType.ADMIN
+                && request.userStatus() == UserStatus.ACTIVE;
+
+        lastAdminGuard.ensureNotRemovingLastAdmin(user, willRemainActiveAdmin);
 
         user.setUsername(request.username());
         user.setFullName(request.fullName());
@@ -43,26 +46,5 @@ public class UpdateUserService {
         repository.save(user);
 
         return UserMapper.toResponse(user);
-    }
-
-    private void validateNotRemovingLastAdmin(User user, UpdateUserRequest request) {
-
-        boolean wasActiveAdmin = user.getUserType() == UserType.ADMIN
-                && user.getUserStatus() == UserStatus.ACTIVE;
-
-        boolean stillActiveAdmin = request.userType() == UserType.ADMIN
-                && request.userStatus() == UserStatus.ACTIVE;
-
-        if (wasActiveAdmin && !stillActiveAdmin) {
-
-            long activeAdmins = repository.countByUserTypeAndUserStatus(
-                    UserType.ADMIN,
-                    UserStatus.ACTIVE
-            );
-
-            if (activeAdmins <= 1) {
-                throw new LastAdminException();
-            }
-        }
     }
 }

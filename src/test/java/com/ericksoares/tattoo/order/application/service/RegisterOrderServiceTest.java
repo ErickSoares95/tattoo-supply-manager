@@ -69,6 +69,8 @@ class RegisterOrderServiceTest {
 
         assertEquals(1L, order.userId());
 
+        assertEquals("Fonte Dragon", order.items().get(0).productName());
+
         verify(productRepository)
                 .findById(1L);
 
