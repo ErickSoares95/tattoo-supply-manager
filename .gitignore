@@ -35,3 +35,6 @@ build/
 ### Claude Code ###
 .claude/
 CLAUDE.md
+
+### Personal ###
+docs/plano-carreira.md

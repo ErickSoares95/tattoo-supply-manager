@@ -4,6 +4,22 @@ Backend system designed to manage tattoo supply products, built with a strong fo
 
 ---
 
+## 🌐 Live Demo
+
+- **Frontend:** https://tattoo-supply-manager-frontend.onrender.com
+- **Backend API:** https://tattoo-supply-manager.onrender.com (Swagger UI at `/swagger-ui.html`)
+
+Demo accounts (seeded via `docker/seed-demo-data.sql`):
+
+| Role  | Email             | Password        |
+|-------|-------------------|------------------|
+| Admin | admin@demo.com    | Demo@Admin123    |
+| Client| client@demo.com   | Demo@Client123   |
+
+> Both services run on Render's free tier, so the first request after a period of inactivity may take 30-50s to respond while the instance spins back up.
+
+---
+
 ## 📌 Overview
 
 This project goes beyond a simple CRUD. It was designed as a **Modular Monolith (Modulith)** with clear boundaries between domains, allowing a **gradual and safe evolution into microservices**.
