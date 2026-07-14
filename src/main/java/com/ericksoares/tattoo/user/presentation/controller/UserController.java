@@ -1,5 +1,7 @@
 package com.ericksoares.tattoo.user.presentation.controller;
 
+import com.ericksoares.tattoo.shared.security.model.AuthenticatedUser;
+import com.ericksoares.tattoo.user.application.dto.request.ChangePasswordRequest;
 import com.ericksoares.tattoo.user.application.dto.request.CreateUserRequest;
 import com.ericksoares.tattoo.user.application.dto.request.UpdateUserRequest;
 import com.ericksoares.tattoo.user.application.dto.request.UserFilterRequest;
@@ -12,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,6 +28,7 @@ public class UserController {
     private final CreateUserService createUserService;
     private final UpdateUserService updateUserService;
     private final DeleteUserService deleteUserService;
+    private final ChangePasswordService changePasswordService;
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -79,6 +83,20 @@ public class UserController {
     ) {
 
         deleteUserService.execute(id);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/me/password")
+    public ResponseEntity<Void> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+
+        changePasswordService.execute(
+                authenticatedUser.getUser().getId(),
+                request
+        );
 
         return ResponseEntity.noContent().build();
     }
