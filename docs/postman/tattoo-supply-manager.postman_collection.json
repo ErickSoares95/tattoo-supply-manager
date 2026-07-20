@@ -1,0 +1,306 @@
+{
+  "info": {
+    "name": "Tattoo Supply Manager",
+    "description": "API collection for the Tattoo Supply Manager backend (Spring Boot modular monolith). Run the two Login requests in the Auth folder first to populate {{token}} — every other request reuses it via collection-level Bearer auth. Demo credentials come from docker/seed-demo-data.sql.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "userId", "value": "", "type": "string" },
+    { "key": "productId", "value": "", "type": "string" },
+    { "key": "orderId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@demo.com\",\n  \"password\": \"Demo@Admin123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": [ "{{baseUrl}}" ], "path": [ "auth", "login" ] },
+            "description": "Public endpoint. Sets {{token}} to the admin JWT on success — run this before any ADMIN-only request below."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('token', body.token);",
+                  "  pm.collectionVariables.set('userId', body.userId);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (Client)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"client@demo.com\",\n  \"password\": \"Demo@Client123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": [ "{{baseUrl}}" ], "path": [ "auth", "login" ] },
+            "description": "Public endpoint. Sets {{token}} to the client JWT on success — run this before creating/listing orders as a CLIENT instead of ADMIN."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('token', body.token);",
+                  "  pm.collectionVariables.set('userId', body.userId);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Register (public)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "auth": { "type": "noauth" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"new_client\",\n  \"email\": \"new_client@example.com\",\n  \"password\": \"Password123\",\n  \"fullName\": \"New Client\",\n  \"phoneNumber\": \"11999999999\",\n  \"cpf\": \"12345678900\",\n  \"imageUrl\": null\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/users", "host": [ "{{baseUrl}}" ], "path": [ "users" ] },
+            "description": "Public registration. userType is always forced to CLIENT server-side (no privilege escalation via this endpoint) — promote to ADMIN/ATTENDANT afterwards via PUT /users/{id}."
+          }
+        },
+        {
+          "name": "List Users (Admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/users?page=0&size=10",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "users" ],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" },
+                { "key": "username", "value": "", "disabled": true },
+                { "key": "email", "value": "", "disabled": true },
+                { "key": "userStatus", "value": "ACTIVE", "disabled": true },
+                { "key": "userType", "value": "CLIENT", "disabled": true }
+              ]
+            },
+            "description": "ADMIN only. Paginated + filterable by username/email/userStatus/userType."
+          }
+        },
+        {
+          "name": "Get User By Id (Admin)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/users/{{userId}}", "host": [ "{{baseUrl}}" ], "path": [ "users", "{{userId}}" ] },
+            "description": "ADMIN only."
+          }
+        },
+        {
+          "name": "Update User (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"new_client\",\n  \"fullName\": \"New Client\",\n  \"phoneNumber\": \"11999999999\",\n  \"cpf\": \"12345678900\",\n  \"imageUrl\": null,\n  \"userType\": \"CLIENT\",\n  \"userStatus\": \"ACTIVE\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/users/{{userId}}", "host": [ "{{baseUrl}}" ], "path": [ "users", "{{userId}}" ] },
+            "description": "ADMIN only. Full replace (not a patch) — this is the endpoint that promotes/demotes userType. Demoting the last active ADMIN returns 409."
+          }
+        },
+        {
+          "name": "Delete User (Admin)",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/users/{{userId}}", "host": [ "{{baseUrl}}" ], "path": [ "users", "{{userId}}" ] },
+            "description": "ADMIN only. Deleting the last active ADMIN returns 409 (LastAdminGuard)."
+          }
+        },
+        {
+          "name": "Change My Password",
+          "request": {
+            "method": "PATCH",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"Demo@Client123\",\n  \"newPassword\": \"NewPassword123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/users/me/password", "host": [ "{{baseUrl}}" ], "path": [ "users", "me", "password" ] },
+            "description": "Any authenticated user, changes their own password. Wrong currentPassword returns 401."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Create Product (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tinta Black OPUS\",\n  \"description\": \"Tinta preta profissional para tatuagem, 30ml\",\n  \"price\": 89.90,\n  \"stock\": 50\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/products", "host": [ "{{baseUrl}}" ], "path": [ "products" ] },
+            "description": "ADMIN only. Sets {{productId}} on success for the requests below."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('productId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Products (public)",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": {
+              "raw": "{{baseUrl}}/products?page=0&size=10",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "products" ],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" },
+                { "key": "name", "value": "", "disabled": true },
+                { "key": "description", "value": "", "disabled": true },
+                { "key": "minPrice", "value": "", "disabled": true },
+                { "key": "maxPrice", "value": "", "disabled": true },
+                { "key": "minStock", "value": "", "disabled": true }
+              ]
+            },
+            "description": "No auth required. Paginated + filterable by name/description/minPrice/maxPrice/minStock."
+          }
+        },
+        {
+          "name": "Get Product By Id (public)",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": [ "{{baseUrl}}" ], "path": [ "products", "{{productId}}" ] }
+          }
+        },
+        {
+          "name": "Update Product (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tinta Black OPUS\",\n  \"description\": \"Tinta preta profissional para tatuagem, 30ml - novo lote\",\n  \"price\": 94.90,\n  \"stock\": 40\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": [ "{{baseUrl}}" ], "path": [ "products", "{{productId}}" ] },
+            "description": "ADMIN only."
+          }
+        },
+        {
+          "name": "Delete Product (Admin)",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": [ "{{baseUrl}}" ], "path": [ "products", "{{productId}}" ] },
+            "description": "ADMIN only."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Create Order (Client/Admin)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": {{productId}},\n      \"quantity\": 2\n    }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/orders", "host": [ "{{baseUrl}}" ], "path": [ "orders" ] },
+            "description": "CLIENT or ADMIN. Requires {{productId}} to exist with enough stock — run 'Create Product' first, or point productId at a seeded product. Publishes OrderRegisteredEvent, which fires the async notification flow (check app logs for the notification-1 thread). Sets {{orderId}} on success."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('orderId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List My Orders (Client/Admin)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/orders?page=0&size=10", "host": [ "{{baseUrl}}" ], "path": [ "orders" ], "query": [ { "key": "page", "value": "0" }, { "key": "size", "value": "10" } ] },
+            "description": "CLIENT sees only their own orders; ADMIN sees all."
+          }
+        },
+        {
+          "name": "Get Order By Id (Client/Admin)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/orders/{{orderId}}", "host": [ "{{baseUrl}}" ], "path": [ "orders", "{{orderId}}" ] },
+            "description": "CLIENT accessing another client's order gets 403. ADMIN can access any order."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Reprocess Failed Notifications (Admin)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/notifications/reprocess", "host": [ "{{baseUrl}}" ], "path": [ "notifications", "reprocess" ] },
+            "description": "ADMIN only. Re-attempts every FailedNotification row where processed=false — the manual/administrative recovery path for the retry+DLQ flow."
+          }
+        }
+      ]
+    }
+  ]
+}
