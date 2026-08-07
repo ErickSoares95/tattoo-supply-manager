@@ -50,7 +50,7 @@ class AuthControllerIT {
         createUser();
 
         String body = """
-                {"email":"login@teste.com","password":"Senha1234"}
+                {"login":"login@teste.com","password":"Senha1234"}
                 """;
 
         mockMvc.perform(
@@ -69,7 +69,7 @@ class AuthControllerIT {
         createUser();
 
         String body = """
-                {"email":"login@teste.com","password":"SenhaErrada1"}
+                {"login":"login@teste.com","password":"SenhaErrada1"}
                 """;
 
         mockMvc.perform(
@@ -78,14 +78,14 @@ class AuthControllerIT {
                                 .content(body)
                 )
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Invalid email or password"));
+                .andExpect(jsonPath("$.message").value("Invalid login or password"));
     }
 
     @Test
-    void shouldReturnUnauthorizedWhenEmailDoesNotExist() throws Exception {
+    void shouldReturnUnauthorizedWhenLoginDoesNotExist() throws Exception {
 
         String body = """
-                {"email":"naoexiste@teste.com","password":"Senha1234"}
+                {"login":"naoexiste@teste.com","password":"Senha1234"}
                 """;
 
         mockMvc.perform(
@@ -94,6 +94,35 @@ class AuthControllerIT {
                                 .content(body)
                 )
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Invalid email or password"));
+                .andExpect(jsonPath("$.message").value("Invalid login or password"));
+    }
+
+    @Test
+    void shouldLoginSuccessfullyWithCpf() throws Exception {
+
+        User user = User.builder()
+                .username("cpfloginuser")
+                .email("cpflogin@teste.com")
+                .password(passwordEncoder.encode("Senha1234"))
+                .fullName("Usuario Login CPF")
+                .cpf("98765432100")
+                .userStatus(UserStatus.ACTIVE)
+                .userType(UserType.CLIENT)
+                .build();
+
+        userRepository.save(user);
+
+        String body = """
+                {"login":"98765432100","password":"Senha1234"}
+                """;
+
+        mockMvc.perform(
+                        post("/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(body)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andExpect(jsonPath("$.email").value("cpflogin@teste.com"));
     }
 }

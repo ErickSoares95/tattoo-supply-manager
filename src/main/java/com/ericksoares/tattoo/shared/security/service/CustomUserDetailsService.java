@@ -16,11 +16,16 @@ public class CustomUserDetailsService
 
     private final UserRepository repository;
 
+    /**
+     * "username" here is Spring Security's generic term for the login principal -
+     * in this app it's whatever the client sent as LoginRequest.login(), which can
+     * be either the user's email or their CPF (see AuthenticateUserService).
+     */
     @Override
-    public UserDetails loadUserByUsername(String email)
+    public UserDetails loadUserByUsername(String login)
             throws UsernameNotFoundException {
 
-        User user = repository.findByEmail(email)
+        User user = repository.findByEmailOrCpf(login, login)
                 .orElseThrow(() ->
                         new UsernameNotFoundException(
                                 "User not found"

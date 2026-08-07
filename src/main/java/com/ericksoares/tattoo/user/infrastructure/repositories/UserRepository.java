@@ -23,5 +23,7 @@ public interface UserRepository extends
 
     Optional<User> findByEmail(String email);
 
+    Optional<User> findByEmailOrCpf(String email, String cpf);
+
     long countByUserTypeAndUserStatus(UserType userType, UserStatus userStatus);
 }

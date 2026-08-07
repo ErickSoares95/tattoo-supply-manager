@@ -1,15 +1,16 @@
 package com.ericksoares.tattoo.user.application.service;
 
 import com.ericksoares.tattoo.shared.security.JwtService;
+import com.ericksoares.tattoo.shared.security.model.AuthenticatedUser;
 import com.ericksoares.tattoo.user.application.dto.request.LoginRequest;
 import com.ericksoares.tattoo.user.application.dto.response.LoginResponse;
 import com.ericksoares.tattoo.user.domain.entity.User;
 import com.ericksoares.tattoo.user.domain.exception.InvalidCredentialsException;
-import com.ericksoares.tattoo.user.infrastructure.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,16 +23,16 @@ public class AuthenticateUserService {
 
     private final JwtService jwtService;
 
-    private final UserRepository repository;
-
     public LoginResponse execute(LoginRequest request) {
+
+        Authentication authentication;
 
         try {
 
-            authenticationManager.authenticate(
+            authentication = authenticationManager.authenticate(
 
                     new UsernamePasswordAuthenticationToken(
-                            request.email(),
+                            request.login(),
                             request.password()
                     )
             );
@@ -41,8 +42,9 @@ public class AuthenticateUserService {
             throw new InvalidCredentialsException();
         }
 
-        User user = repository.findByEmail(request.email())
-                .orElseThrow(InvalidCredentialsException::new);
+        // CustomUserDetailsService already resolved login (email OR cpf) to this User -
+        // reusing it here avoids a second, redundant repository lookup by a different key.
+        User user = ((AuthenticatedUser) authentication.getPrincipal()).getUser();
 
         String token = jwtService.generateToken(user);
 

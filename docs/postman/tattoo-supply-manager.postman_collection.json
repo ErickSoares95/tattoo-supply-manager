@@ -28,10 +28,10 @@
             "header": [ { "key": "Content-Type", "value": "application/json" } ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@demo.com\",\n  \"password\": \"Demo@Admin123\"\n}"
+              "raw": "{\n  \"login\": \"admin@demo.com\",\n  \"password\": \"Demo@Admin123\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/auth/login", "host": [ "{{baseUrl}}" ], "path": [ "auth", "login" ] },
-            "description": "Public endpoint. Sets {{token}} to the admin JWT on success — run this before any ADMIN-only request below."
+            "description": "Public endpoint. \"login\" accepts email OR CPF. Sets {{token}} to the admin JWT on success — run this before any ADMIN-only request below."
           },
           "event": [
             {
@@ -56,10 +56,10 @@
             "header": [ { "key": "Content-Type", "value": "application/json" } ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"client@demo.com\",\n  \"password\": \"Demo@Client123\"\n}"
+              "raw": "{\n  \"login\": \"client@demo.com\",\n  \"password\": \"Demo@Client123\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/auth/login", "host": [ "{{baseUrl}}" ], "path": [ "auth", "login" ] },
-            "description": "Public endpoint. Sets {{token}} to the client JWT on success — run this before creating/listing orders as a CLIENT instead of ADMIN."
+            "description": "Public endpoint. \"login\" accepts email OR CPF. Sets {{token}} to the client JWT on success — run this before creating/listing orders as a CLIENT instead of ADMIN."
           },
           "event": [
             {
