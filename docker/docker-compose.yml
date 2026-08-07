@@ -1,7 +1,7 @@
 services:
 
   postgres:
-    image: postgres:17
+    image: pgvector/pgvector:pg17
     container_name: tattoo-supply-manager-postgres
     restart: always
     environment:
@@ -17,6 +17,15 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: tattoo-supply-manager-ollama
+    restart: always
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
 
   app:
     build:
@@ -34,6 +43,7 @@ services:
       SPRING_DATASOURCE_USERNAME: tattoo_user
       SPRING_DATASOURCE_PASSWORD: tattoo_pass
       JWT_SECRET: local-dev-jwt-secret-troque-em-producao-32chars+
+      OLLAMA_BASE_URL: http://ollama:11434
 
   prometheus:
     image: prom/prometheus:latest
@@ -57,3 +67,4 @@ services:
 
 volumes:
   postgres_data:
+  ollama_data:

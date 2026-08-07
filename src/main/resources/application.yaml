@@ -12,6 +12,21 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+  ai:
+    ollama:
+      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+      init:
+        pull-model-strategy: never
+      chat:
+        options:
+          model: ${OLLAMA_CHAT_MODEL:llama3.2:1b}
+      embedding:
+        options:
+          model: ${OLLAMA_EMBEDDING_MODEL:nomic-embed-text}
+    vectorstore:
+      pgvector:
+        initialize-schema: true
+        dimensions: 768
 
 jwt:
   secret: ${JWT_SECRET:dev-only-secret-nao-usar-em-producao-troque-isso}

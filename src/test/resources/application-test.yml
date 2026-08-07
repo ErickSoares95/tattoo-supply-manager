@@ -6,3 +6,18 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      init:
+        pull-model-strategy: never
+      chat:
+        options:
+          model: llama3.2:1b
+      embedding:
+        options:
+          model: nomic-embed-text
+    vectorstore:
+      pgvector:
+        initialize-schema: true
+        dimensions: 768

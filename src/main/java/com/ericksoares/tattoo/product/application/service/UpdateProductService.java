@@ -4,9 +4,11 @@ import com.ericksoares.tattoo.product.application.dto.request.UpdateProductReque
 import com.ericksoares.tattoo.product.application.dto.response.ProductResponse;
 import com.ericksoares.tattoo.product.application.mapper.ProductMapper;
 import com.ericksoares.tattoo.product.domain.entity.Product;
+import com.ericksoares.tattoo.product.domain.event.ProductUpdatedEvent;
 import com.ericksoares.tattoo.product.domain.exception.ProductNotFoundException;
 import com.ericksoares.tattoo.product.infrastructure.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UpdateProductService {
 
     private final ProductRepository repository;
+    private final ApplicationEventPublisher publisher;
 
     public ProductResponse execute(
             Long id,
@@ -35,6 +38,14 @@ public class UpdateProductService {
         product.validate();
 
         repository.save(product);
+
+        publisher.publishEvent(
+                new ProductUpdatedEvent(
+                        product.getId(),
+                        product.getName(),
+                        product.getPrice()
+                )
+        );
 
         return ProductMapper.toResponse(product);
     }
