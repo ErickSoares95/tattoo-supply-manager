@@ -1,0 +1,49 @@
+# Deployment (not StatefulSet) + a single PVC, replicas: 1 - a known simplification
+# for a single-instance dev/demo database. A real multi-replica Postgres setup would
+# need a StatefulSet (stable per-pod storage/identity) plus actual replication, which
+# is a different problem than this "lift docker-compose into k8s" gap is solving.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: tattoo-supply-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  strategy:
+    type: Recreate # avoids two pods ever mounting the same ReadWriteOnce PVC at once
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: pgvector/pgvector:pg17
+          ports:
+            - containerPort: 5432
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata # avoids initdb clashing with a stray lost+found dir on the mounted volume root
+          envFrom:
+            - secretRef:
+                name: db-credentials
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "tattoo_user", "-d", "tattoo-supply-manager-db"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "tattoo_user", "-d", "tattoo-supply-manager-db"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: postgres-data

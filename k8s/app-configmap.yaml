@@ -1,0 +1,11 @@
+# Non-secret app config. SPRING_DATASOURCE_URL points at the "postgres" Service by
+# its DNS name (ClusterIP Services get a stable in-cluster DNS entry automatically) -
+# same idea as the "postgres:5432" hostname the app already uses inside docker-compose.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: tattoo-supply-manager
+data:
+  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/tattoo-supply-manager-db
+  CORS_ALLOWED_ORIGINS: "*"

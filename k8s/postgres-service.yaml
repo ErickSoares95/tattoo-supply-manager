@@ -1,0 +1,13 @@
+# ClusterIP: only reachable from inside the cluster (by the app, via the "postgres"
+# DNS name) - a database has no business being exposed outside the cluster.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: tattoo-supply-manager
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

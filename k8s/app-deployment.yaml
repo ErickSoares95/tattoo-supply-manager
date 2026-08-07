@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+  namespace: tattoo-supply-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tattoo-supply-manager
+  template:
+    metadata:
+      labels:
+        app: tattoo-supply-manager
+    spec:
+      # Kubernetes has no direct equivalent to docker-compose's "depends_on:
+      # condition: service_healthy" - without this, the app pod would start
+      # racing Postgres and crash-loop a few times before Postgres is ready to
+      # accept connections. An initContainer blocking until the port is open is
+      # the standard workaround.
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.36
+          command: ["sh", "-c", "until nc -z postgres 5432; do echo waiting for postgres; sleep 2; done"]
+      containers:
+        - name: app
+          # Built locally (docker build -f docker/Dockerfile -t tattoo-supply-manager:local .)
+          # and referenced with imagePullPolicy: IfNotPresent so Kubernetes uses the image
+          # already in Docker Desktop's local image cache instead of pulling from a registry -
+          # there's no registry in this gap's scope yet.
+          image: tattoo-supply-manager:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: app-secret
+          env:
+            # db-credentials' keys are named for the Postgres container's own env
+            # contract (POSTGRES_USER/PASSWORD) - reusing the same Secret here instead
+            # of duplicating the values keeps there being exactly one place they live.
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: POSTGRES_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: POSTGRES_PASSWORD
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 40
+            periodSeconds: 15
