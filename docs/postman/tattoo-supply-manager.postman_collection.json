@@ -286,6 +286,19 @@
             "url": { "raw": "{{baseUrl}}/orders/{{orderId}}", "host": [ "{{baseUrl}}" ], "path": [ "orders", "{{orderId}}" ] },
             "description": "CLIENT accessing another client's order gets 403. ADMIN can access any order."
           }
+        },
+        {
+          "name": "Pay Order (Client/Admin)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 100.00,\n  \"method\": \"PIX\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/orders/{{orderId}}/payments", "host": [ "{{baseUrl}}" ], "path": [ "orders", "{{orderId}}", "payments" ] },
+            "description": "CLIENT (must own the order) or ADMIN. No real gateway yet - simulated: approves only when amount matches the order's total exactly, otherwise rejects (amount below is a placeholder, match it to the order's actual total). Publishes PaymentProcessedEvent to Kafka (payment.processed), consumed by the notification module - check app logs for the ntainer#0-... consumer thread. A second payment attempt on an already-approved order returns 409."
+          }
         }
       ]
     },
@@ -298,6 +311,53 @@
             "method": "POST",
             "url": { "raw": "{{baseUrl}}/notifications/reprocess", "host": [ "{{baseUrl}}" ], "path": [ "notifications", "reprocess" ] },
             "description": "ADMIN only. Re-attempts every FailedNotification row where processed=false — the manual/administrative recovery path for the retry+DLQ flow."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Assistant",
+      "item": [
+        {
+          "name": "Ping (Admin/Attendant)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Say hello in one short sentence.\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/assistant/ping", "host": [ "{{baseUrl}}" ], "path": [ "assistant", "ping" ] },
+            "description": "ADMIN or ATTENDANT. Trivial round-trip to the LlmClient (Ollama, llama3.2:1b locally) — just proves the model integration works, no retrieval involved."
+          }
+        },
+        {
+          "name": "Restock Recommendations (Admin/Attendant)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/assistant/restock-recommendations", "host": [ "{{baseUrl}}" ], "path": [ "assistant", "restock-recommendations" ] },
+            "description": "ADMIN or ATTENDANT. Structured retrieval (SQL aggregation over order_items + current stock), not semantic RAG — the LLM only summarizes numbers already computed by the query."
+          }
+        },
+        {
+          "name": "Ask (Admin/Attendant)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"What tattoo inks do we have in stock?\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/assistant/ask", "host": [ "{{baseUrl}}" ], "path": [ "assistant", "ask" ] },
+            "description": "ADMIN or ATTENDANT. Real semantic RAG: embeds the question, does a pgvector similarity search over the indexed product catalog, then grounds the LLM's answer in the retrieved context. Run 'Reindex Catalog' first if the catalog changed since the app started."
+          }
+        },
+        {
+          "name": "Reindex Catalog (Admin)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/assistant/reindex-catalog", "host": [ "{{baseUrl}}" ], "path": [ "assistant", "reindex-catalog" ] },
+            "description": "ADMIN only. Re-embeds every product into the pgvector store (VectorStore autoconfigured by spring-ai-starter-vector-store-pgvector). Normally happens reactively via ProductRegisteredEvent/ProductUpdatedEvent — this is the manual/bulk path."
           }
         }
       ]
