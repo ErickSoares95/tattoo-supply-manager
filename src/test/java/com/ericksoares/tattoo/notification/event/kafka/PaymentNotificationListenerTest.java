@@ -2,7 +2,9 @@ package com.ericksoares.tattoo.notification.event.kafka;
 
 import com.ericksoares.tattoo.notification.application.service.NotificationService;
 import com.ericksoares.tattoo.notification.domain.entity.FailedPaymentNotification;
+import com.ericksoares.tattoo.notification.domain.entity.ProcessedPaymentEvent;
 import com.ericksoares.tattoo.notification.domain.repository.FailedPaymentNotificationRepository;
+import com.ericksoares.tattoo.notification.domain.repository.ProcessedPaymentEventRepository;
 import com.ericksoares.tattoo.payment.domain.entity.PaymentStatus;
 import com.ericksoares.tattoo.payment.domain.event.PaymentProcessedEvent;
 import org.junit.jupiter.api.Test;
@@ -10,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -26,6 +29,9 @@ class PaymentNotificationListenerTest {
 
     @Mock
     private FailedPaymentNotificationRepository failedRepository;
+
+    @Mock
+    private ProcessedPaymentEventRepository processedRepository;
 
     @InjectMocks
     private PaymentNotificationListener listener;
@@ -77,5 +83,22 @@ class PaymentNotificationListenerTest {
         listener.handle(event);
 
         verify(failedRepository).save(any(FailedPaymentNotification.class));
+    }
+
+    @Test
+    void shouldSkipProcessingWhenEventWasAlreadyClaimed() {
+
+        PaymentProcessedEvent event = new PaymentProcessedEvent(
+                UUID.randomUUID(), 1L, PaymentStatus.APPROVED, BigDecimal.valueOf(100), LocalDateTime.now()
+        );
+
+        when(processedRepository.saveAndFlush(any(ProcessedPaymentEvent.class)))
+                .thenThrow(new DataIntegrityViolationException("duplicate event_id"));
+
+        listener.handle(event);
+
+        verify(notificationService, never()).notifyPaymentConfirmed(any());
+        verify(notificationService, never()).notifyPaymentRejected(any());
+        verify(failedRepository, never()).save(any());
     }
 }
