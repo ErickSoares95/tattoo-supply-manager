@@ -21,4 +21,14 @@ public class EmailNotificationSender implements NotificationSender {
     public void sendPaymentRejected(Long orderId) {
         log.info("Sending fake email: payment rejected for order {}", orderId);
     }
+
+    /**
+     * Not part of the NotificationSender interface on purpose - a welcome email is
+     * inherently email-only (unlike order/payment notifications, it doesn't make sense
+     * to fan it out to webhook/WhatsApp too), so this is called directly by
+     * notification.event.WelcomeEmailListener instead of through the sender list.
+     */
+    public void sendWelcomeEmail(String email, String fullName) {
+        log.info("Sending fake welcome email to {} ({})", email, fullName);
+    }
 }

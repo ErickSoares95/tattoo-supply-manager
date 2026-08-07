@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -26,6 +27,9 @@ class CreateUserServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private ApplicationEventPublisher publisher;
 
     @InjectMocks
     private CreateUserService service;
@@ -71,6 +75,9 @@ class CreateUserServiceTest {
 
         verify(repository)
                 .save(any(User.class));
+
+        verify(publisher)
+                .publishEvent(any(Object.class));
     }
 
     @Test
@@ -94,5 +101,8 @@ class CreateUserServiceTest {
                 EmailAlreadyExistsException.class,
                 () -> service.execute(request)
         );
+
+        verify(publisher, never())
+                .publishEvent(any());
     }
 }

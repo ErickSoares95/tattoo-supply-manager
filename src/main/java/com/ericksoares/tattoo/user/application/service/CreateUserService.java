@@ -2,15 +2,19 @@ package com.ericksoares.tattoo.user.application.service;
 
 import com.ericksoares.tattoo.user.application.dto.request.CreateUserRequest;
 import com.ericksoares.tattoo.user.application.dto.response.UserResponse;
+import com.ericksoares.tattoo.user.domain.event.UserRegisteredEvent;
 import com.ericksoares.tattoo.user.mapper.UserMapper;
 import com.ericksoares.tattoo.user.domain.entity.User;
 import com.ericksoares.tattoo.user.domain.exception.EmailAlreadyExistsException;
 import com.ericksoares.tattoo.user.domain.exception.UsernameAlreadyExistsException;
 import com.ericksoares.tattoo.user.infrastructure.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +23,7 @@ public class CreateUserService {
 
     private final UserRepository repository;
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationEventPublisher publisher;
 
     public UserResponse execute(CreateUserRequest request) {
 
@@ -33,6 +38,15 @@ public class CreateUserService {
         );
 
         User savedUser = repository.save(user);
+
+        publisher.publishEvent(
+                new UserRegisteredEvent(
+                        savedUser.getId(),
+                        savedUser.getEmail(),
+                        savedUser.getFullName(),
+                        LocalDateTime.now()
+                )
+        );
 
         return UserMapper.toResponse(savedUser);
     }
