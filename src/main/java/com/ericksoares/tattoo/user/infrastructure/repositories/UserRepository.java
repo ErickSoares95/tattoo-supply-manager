@@ -17,6 +17,10 @@ public interface UserRepository extends
 
     boolean existsByUsername(String username);
 
+    boolean existsByCpf(String cpf);
+
+    boolean existsByCpfAndIdNot(String cpf, Long id);
+
     Optional<User> findByEmail(String email);
 
     long countByUserTypeAndUserStatus(UserType userType, UserStatus userStatus);

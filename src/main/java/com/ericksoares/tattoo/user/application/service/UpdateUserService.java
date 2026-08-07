@@ -6,6 +6,7 @@ import com.ericksoares.tattoo.user.mapper.UserMapper;
 import com.ericksoares.tattoo.user.domain.entity.User;
 import com.ericksoares.tattoo.user.domain.enums.UserStatus;
 import com.ericksoares.tattoo.user.domain.enums.UserType;
+import com.ericksoares.tattoo.user.domain.exception.CpfAlreadyExistsException;
 import com.ericksoares.tattoo.user.domain.exception.UserNotFoundException;
 import com.ericksoares.tattoo.user.infrastructure.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,10 +36,14 @@ public class UpdateUserService {
 
         lastAdminGuard.ensureNotRemovingLastAdmin(user, willRemainActiveAdmin);
 
+        String normalizedCpf = UserMapper.normalizeCpf(request.cpf());
+
+        validateCpf(normalizedCpf, id);
+
         user.setUsername(request.username());
         user.setFullName(request.fullName());
         user.setPhoneNumber(request.phoneNumber());
-        user.setCpf(request.cpf());
+        user.setCpf(normalizedCpf);
         user.setImageUrl(request.imageUrl());
         user.setUserType(request.userType());
         user.setUserStatus(request.userStatus());
@@ -46,5 +51,12 @@ public class UpdateUserService {
         repository.save(user);
 
         return UserMapper.toResponse(user);
+    }
+
+    private void validateCpf(String cpf, Long userId) {
+
+        if (cpf != null && repository.existsByCpfAndIdNot(cpf, userId)) {
+            throw new CpfAlreadyExistsException(cpf);
+        }
     }
 }

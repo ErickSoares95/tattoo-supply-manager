@@ -4,6 +4,7 @@ import com.ericksoares.tattoo.user.application.dto.request.CreateUserRequest;
 import com.ericksoares.tattoo.user.application.dto.response.UserResponse;
 import com.ericksoares.tattoo.user.domain.entity.User;
 import com.ericksoares.tattoo.user.domain.enums.UserType;
+import com.ericksoares.tattoo.user.domain.exception.CpfAlreadyExistsException;
 import com.ericksoares.tattoo.user.domain.exception.EmailAlreadyExistsException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.ericksoares.tattoo.user.infrastructure.repositories.UserRepository;
@@ -101,6 +102,41 @@ class CreateUserServiceTest {
                 EmailAlreadyExistsException.class,
                 () -> service.execute(request)
         );
+
+        verify(publisher, never())
+                .publishEvent(any());
+    }
+
+    @Test
+    void shouldThrowWhenCpfExists() {
+
+        CreateUserRequest request =
+                new CreateUserRequest(
+                        "admin",
+                        "admin@tattoo.com",
+                        "123456",
+                        "Administrador",
+                        null,
+                        "111.222.333-44",
+                        null
+                );
+
+        when(repository.existsByEmail(any()))
+                .thenReturn(false);
+
+        when(repository.existsByUsername(any()))
+                .thenReturn(false);
+
+        when(repository.existsByCpf("11122233344"))
+                .thenReturn(true);
+
+        assertThrows(
+                CpfAlreadyExistsException.class,
+                () -> service.execute(request)
+        );
+
+        verify(repository, never())
+                .save(any());
 
         verify(publisher, never())
                 .publishEvent(any());

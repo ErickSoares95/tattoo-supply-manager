@@ -5,6 +5,7 @@ import com.ericksoares.tattoo.user.application.dto.response.UserResponse;
 import com.ericksoares.tattoo.user.domain.event.UserRegisteredEvent;
 import com.ericksoares.tattoo.user.mapper.UserMapper;
 import com.ericksoares.tattoo.user.domain.entity.User;
+import com.ericksoares.tattoo.user.domain.exception.CpfAlreadyExistsException;
 import com.ericksoares.tattoo.user.domain.exception.EmailAlreadyExistsException;
 import com.ericksoares.tattoo.user.domain.exception.UsernameAlreadyExistsException;
 import com.ericksoares.tattoo.user.infrastructure.repositories.UserRepository;
@@ -32,6 +33,8 @@ public class CreateUserService {
         validateUsername(request.username());
 
         User user = UserMapper.toEntity(request);
+
+        validateCpf(user.getCpf());
 
         user.setPassword(
                 passwordEncoder.encode(request.password())
@@ -62,6 +65,13 @@ public class CreateUserService {
 
         if (repository.existsByUsername(username)) {
             throw new UsernameAlreadyExistsException(username);
+        }
+    }
+
+    private void validateCpf(String cpf) {
+
+        if (cpf != null && repository.existsByCpf(cpf)) {
+            throw new CpfAlreadyExistsException(cpf);
         }
     }
 }
