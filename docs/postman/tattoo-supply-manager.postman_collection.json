@@ -316,6 +316,19 @@
       ]
     },
     {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Product Sales Report (Admin/Attendant)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/reports/product-sales", "host": [ "{{baseUrl}}" ], "path": [ "reports", "product-sales" ] },
+            "description": "ADMIN or ATTENDANT. Backed by the \"product_sales_report\" Postgres VIEW (window functions: RANK() and SUM() OVER() for revenue rank/share) - per-product units sold, revenue and current stock, counting only order items from orders with an APPROVED payment. Auto-created/refreshed on every app boot (see ProductSalesViewInitializer), no manual migration step needed."
+          }
+        }
+      ]
+    },
+    {
       "name": "Assistant",
       "item": [
         {
