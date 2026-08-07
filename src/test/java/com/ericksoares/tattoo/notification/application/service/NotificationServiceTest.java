@@ -65,4 +65,39 @@ class NotificationServiceTest {
         verify(executor, times(1)).send(workingSender, 1L);
         verify(executor, times(1)).send(failingSender, 1L);
     }
+
+    @Test
+    void shouldNotifyPaymentConfirmedToAllSenders() {
+
+        NotificationService service = new NotificationService(
+                List.of(workingSender, failingSender),
+                executor
+        );
+
+        boolean result = service.notifyPaymentConfirmed(1L);
+
+        assertTrue(result);
+
+        verify(executor).sendPaymentConfirmed(workingSender, 1L);
+        verify(executor).sendPaymentConfirmed(failingSender, 1L);
+    }
+
+    @Test
+    void shouldReturnFalseWhenAnySenderFailsToNotifyPaymentRejected() {
+
+        NotificationService service = new NotificationService(
+                List.of(workingSender, failingSender),
+                executor
+        );
+
+        doThrow(new RuntimeException("webhook indisponivel"))
+                .when(executor).sendPaymentRejected(failingSender, 1L);
+
+        boolean result = service.notifyPaymentRejected(1L);
+
+        assertFalse(result);
+
+        verify(executor, times(1)).sendPaymentRejected(workingSender, 1L);
+        verify(executor, times(1)).sendPaymentRejected(failingSender, 1L);
+    }
 }

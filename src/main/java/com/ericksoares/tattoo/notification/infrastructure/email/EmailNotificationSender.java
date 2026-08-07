@@ -11,4 +11,14 @@ public class EmailNotificationSender implements NotificationSender {
     public void sendOrderRegistered(Long orderId) {
         log.info("Sending fake email for order {}", orderId);
     }
+
+    @Override
+    public void sendPaymentConfirmed(Long orderId) {
+        log.info("Sending fake email: payment confirmed for order {}", orderId);
+    }
+
+    @Override
+    public void sendPaymentRejected(Long orderId) {
+        log.info("Sending fake email: payment rejected for order {}", orderId);
+    }
 }

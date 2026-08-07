@@ -47,4 +47,52 @@ public class NotificationService {
 
         return allSucceeded;
     }
+
+    public boolean notifyPaymentConfirmed(Long orderId) {
+
+        log.info("Sending payment confirmed notification for order {}", orderId);
+
+        boolean allSucceeded = true;
+
+        for (NotificationSender sender : senders) {
+
+            try {
+                executor.sendPaymentConfirmed(sender, orderId);
+            } catch (Exception e) {
+                allSucceeded = false;
+                log.error(
+                        "FINAL FAILURE - sender: {}, orderId: {}, event: payment confirmed",
+                        sender.getClass().getSimpleName(),
+                        orderId,
+                        e
+                );
+            }
+        }
+
+        return allSucceeded;
+    }
+
+    public boolean notifyPaymentRejected(Long orderId) {
+
+        log.info("Sending payment rejected notification for order {}", orderId);
+
+        boolean allSucceeded = true;
+
+        for (NotificationSender sender : senders) {
+
+            try {
+                executor.sendPaymentRejected(sender, orderId);
+            } catch (Exception e) {
+                allSucceeded = false;
+                log.error(
+                        "FINAL FAILURE - sender: {}, orderId: {}, event: payment rejected",
+                        sender.getClass().getSimpleName(),
+                        orderId,
+                        e
+                );
+            }
+        }
+
+        return allSucceeded;
+    }
 }

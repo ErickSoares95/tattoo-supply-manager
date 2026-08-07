@@ -12,4 +12,14 @@ public class WebhookNotificationSender implements NotificationSender {
     public void sendOrderRegistered(Long orderId) {
         log.info("Sending webhook for order {}", orderId);
     }
+
+    @Override
+    public void sendPaymentConfirmed(Long orderId) {
+        log.info("Sending webhook: payment confirmed for order {}", orderId);
+    }
+
+    @Override
+    public void sendPaymentRejected(Long orderId) {
+        log.info("Sending webhook: payment rejected for order {}", orderId);
+    }
 }

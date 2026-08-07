@@ -12,4 +12,14 @@ public class WhatsAppNotificationSender implements NotificationSender {
     public void sendOrderRegistered(Long orderId) {
         log.info("Sending WhatsApp message for order {}", orderId);
     }
+
+    @Override
+    public void sendPaymentConfirmed(Long orderId) {
+        log.info("Sending WhatsApp message: payment confirmed for order {}", orderId);
+    }
+
+    @Override
+    public void sendPaymentRejected(Long orderId) {
+        log.info("Sending WhatsApp message: payment rejected for order {}", orderId);
+    }
 }

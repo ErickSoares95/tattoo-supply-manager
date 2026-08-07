@@ -16,4 +16,22 @@ public class NotificationSenderExecutor {
     public void send(NotificationSender sender, Long orderId) {
         sender.sendOrderRegistered(orderId);
     }
+
+    @Retryable(
+            value = Exception.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 2000)
+    )
+    public void sendPaymentConfirmed(NotificationSender sender, Long orderId) {
+        sender.sendPaymentConfirmed(orderId);
+    }
+
+    @Retryable(
+            value = Exception.class,
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 2000)
+    )
+    public void sendPaymentRejected(NotificationSender sender, Long orderId) {
+        sender.sendPaymentRejected(orderId);
+    }
 }
