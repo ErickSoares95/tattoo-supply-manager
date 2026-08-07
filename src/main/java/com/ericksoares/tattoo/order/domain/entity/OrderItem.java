@@ -16,6 +16,11 @@ import java.math.BigDecimal;
 @Setter
 @SuperBuilder
 public class OrderItem extends BaseEntity {
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id")
+    private Order order;
+
     private Long productId;
     private String productName;
     private Integer quantity;

@@ -76,4 +76,23 @@ class JwtServiceTest {
                 )
         );
     }
+
+    @Test
+    void shouldNotValidateTokenWhenUserIsBlocked() {
+
+        String token =
+                jwtService.generateToken(user);
+
+        user.setUserStatus(UserStatus.BLOCKED);
+
+        AuthenticatedUser authenticatedUser =
+                new AuthenticatedUser(user);
+
+        assertFalse(
+                jwtService.isTokenValid(
+                        token,
+                        authenticatedUser
+                )
+        );
+    }
 }

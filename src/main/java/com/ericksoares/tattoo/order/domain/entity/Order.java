@@ -18,13 +18,22 @@ import java.util.List;
 @SuperBuilder
 public class Order extends BaseEntity {
 
-    @OneToMany(cascade = CascadeType.ALL)
-    @JoinColumn(name = "order_id")
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items;
 
     private BigDecimal total;
 
     private Long userId;
+
+    public void setItems(List<OrderItem> items) {
+        this.items = items;
+
+        if (items != null) {
+            for (OrderItem item : items) {
+                item.setOrder(this);
+            }
+        }
+    }
 
     public void calculateTotal() {
         this.total = items.stream()
