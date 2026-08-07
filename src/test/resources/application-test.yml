@@ -21,3 +21,15 @@ spring:
       pgvector:
         initialize-schema: true
         dimensions: 768
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: tattoo-supply-manager-test
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.ericksoares.tattoo.*
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
