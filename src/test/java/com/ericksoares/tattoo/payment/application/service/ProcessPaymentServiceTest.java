@@ -7,7 +7,9 @@ import com.ericksoares.tattoo.payment.application.dto.PaymentRequest;
 import com.ericksoares.tattoo.payment.application.dto.PaymentResponse;
 import com.ericksoares.tattoo.payment.domain.entity.Payment;
 import com.ericksoares.tattoo.payment.domain.entity.PaymentStatus;
+import com.ericksoares.tattoo.payment.domain.event.PaymentProcessedEvent;
 import com.ericksoares.tattoo.payment.domain.exception.OrderAlreadyPaidException;
+import com.ericksoares.tattoo.payment.infrastructure.kafka.PaymentEventProducer;
 import com.ericksoares.tattoo.payment.infrastructure.repository.PaymentRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +32,9 @@ class ProcessPaymentServiceTest {
 
     @Mock
     private PaymentRepository paymentRepository;
+
+    @Mock
+    private PaymentEventProducer eventProducer;
 
     @InjectMocks
     private ProcessPaymentService service;
@@ -57,6 +62,9 @@ class ProcessPaymentServiceTest {
 
         verify(paymentRepository)
                 .save(any(Payment.class));
+
+        verify(eventProducer)
+                .publish(argThat(event -> event.status() == PaymentStatus.APPROVED && event.orderId().equals(1L)));
     }
 
     @Test
@@ -79,6 +87,9 @@ class ProcessPaymentServiceTest {
         PaymentResponse response = service.execute(1L, request, 10L, false);
 
         assertEquals(PaymentStatus.REJECTED, response.status());
+
+        verify(eventProducer)
+                .publish(argThat(event -> event.status() == PaymentStatus.REJECTED && event.orderId().equals(1L)));
     }
 
     @Test
@@ -96,6 +107,9 @@ class ProcessPaymentServiceTest {
 
         verify(paymentRepository, never())
                 .save(any());
+
+        verify(eventProducer, never())
+                .publish(any());
     }
 
     @Test
@@ -122,6 +136,9 @@ class ProcessPaymentServiceTest {
 
         verify(paymentRepository, never())
                 .save(any());
+
+        verify(eventProducer, never())
+                .publish(any());
     }
 
     @Test
@@ -145,6 +162,9 @@ class ProcessPaymentServiceTest {
 
         verify(paymentRepository, never())
                 .save(any());
+
+        verify(eventProducer, never())
+                .publish(any());
     }
 
     @Test
