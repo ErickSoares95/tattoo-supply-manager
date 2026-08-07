@@ -28,10 +28,34 @@ class ProductControllerIT {
     private ProductRepository productRepository;
 
     @Test
-    void shouldReturnUnauthorizedWhenNoToken() throws Exception {
+    void shouldAllowAnonymousToBrowseCatalog() throws Exception {
 
+        // GET /products and GET /products/{id} are public on purpose (storefront
+        // redesign) - anonymous visitors can browse; mutations still require ADMIN.
         mockMvc.perform(
                         get("/products")
+                )
+                .andExpect(
+                        status().isOk()
+                );
+    }
+
+    @Test
+    void shouldReturnUnauthorizedForNonGetRequestsWithoutToken() throws Exception {
+
+        String request = """
+            {
+              "name":"Ink Black",
+              "description":"Black tattoo ink",
+              "price":99.90,
+              "stock":10
+            }
+            """;
+
+        mockMvc.perform(
+                        post("/products")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(request)
                 )
                 .andExpect(
                         status().isUnauthorized()

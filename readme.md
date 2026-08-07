@@ -150,7 +150,7 @@ Runs the full suite (unit + integration) against a real PostgreSQL instance — 
 | POST   | `/auth/login`                 | Public                | Authenticate and receive a JWT         |
 | GET    | `/users`, `/users/{id}`       | `ADMIN`               | List / view accounts                   |
 | PUT    | `/users/{id}`                 | `ADMIN`               | Update an account, including role promotion |
-| GET    | `/products`, `/products/{id}` | Any authenticated user | Browse the catalog                     |
+| GET    | `/products`, `/products/{id}` | Public               | Browse the catalog                     |
 | POST/PUT/DELETE | `/products/**`       | `ADMIN`               | Manage the catalog                     |
 | POST   | `/orders`                     | `CLIENT`, `ADMIN`     | Place an order                         |
 | GET    | `/orders`                     | `CLIENT`, `ADMIN`     | List orders — `CLIENT` sees only their own, `ADMIN` sees all |

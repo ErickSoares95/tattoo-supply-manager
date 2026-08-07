@@ -73,6 +73,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/users")
                         .permitAll()
 
+                        // Public storefront (redesign): browsing the catalog anonymously is
+                        // standard e-commerce UX (login only required at checkout) - mutations
+                        // (POST/PUT/DELETE) stay behind ProductController's @PreAuthorize("hasRole('ADMIN')").
+                        .requestMatchers(HttpMethod.GET, "/products/**")
+                        .permitAll()
+
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",

@@ -19,10 +19,22 @@ class SecurityIntegrationTest {
     private MockMvc mockMvc;
 
     @Test
+    void shouldAllowAnonymousToBrowseCatalog() throws Exception {
+
+        // GET /products is public on purpose (storefront redesign, see SecurityConfig).
+        mockMvc.perform(
+                        get("/products")
+                )
+                .andExpect(
+                        status().isOk()
+                );
+    }
+
+    @Test
     void shouldReturnUnauthorizedWhenNoToken() throws Exception {
 
         mockMvc.perform(
-                        get("/products")
+                        delete("/products/1")
                 )
                 .andExpect(
                         status().isUnauthorized()
