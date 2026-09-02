@@ -6,7 +6,7 @@ Backend system designed to manage tattoo supply products, built with a strong fo
 
 ## 🌐 Live Demo
 
-- **Frontend:** https://tattoo-supply-manager-frontend.onrender.com
+- **Storefront:** https://tattoo-supply-manager-storefront.vercel.app — Next.js store (public catalog, cart, checkout, admin panel at `/admin`)
 - **Backend API:** https://tattoo-supply-manager.onrender.com (Swagger UI at `/swagger-ui.html`)
 
 Demo accounts (seeded via `docker/seed-demo-data.sql`):
@@ -16,7 +16,9 @@ Demo accounts (seeded via `docker/seed-demo-data.sql`):
 | Admin | admin@demo.com    | Demo@Admin123    |
 | Client| client@demo.com   | Demo@Client123   |
 
-> Both services run on Render's free tier, so the first request after a period of inactivity may take 30-50s to respond while the instance spins back up.
+> The backend runs on Render's free tier, so the first request after a period of inactivity may take 30-50s to respond while the instance spins back up. The storefront runs on Vercel and stays warm.
+
+The original React + Vite MVP is still up at [tattoo-supply-manager-frontend](https://github.com/ErickSoares95/tattoo-supply-manager-frontend) for reference, but the storefront above is the current, actively developed client.
 
 ---
 
@@ -36,10 +38,13 @@ The main goal is to simulate real-world enterprise backend challenges such as de
 - **Event-Driven Communication:** Loose coupling between internal modules via asynchronous events (`order` never calls `notification` directly).
 
 ### Modules
-- **User** → Authentication (JWT), account management, and Role-Based Access Control (`ADMIN`, `CLIENT`, `ATTENDANT`).
+- **User** → Authentication (JWT, login by email *or* CPF), account management, and Role-Based Access Control (`ADMIN`, `CLIENT`, `ATTENDANT`).
 - **Product** → Inventory control, validation constraints, and product management.
 - **Order** → Order creation, ownership-based authorization, and core business rules (stock validation, item pricing).
-- **Notification** → Async processing, per-channel retry isolation, failure persistence, and reprocessing.
+- **Payment** → Payment processing per order, publishing to Kafka (`payment.processed`) for downstream consumers — decoupled from `notification` via a real message broker, not just an in-process event.
+- **Notification** → Async processing, per-channel retry isolation, failure persistence, and reprocessing — reacts to both in-process order events and Kafka payment events.
+- **AI** → Retrieval-Augmented Generation assistant (local LLM via Ollama, no external API keys) — restock recommendations from real sales data and semantic Q&A grounded in the product catalog via `pgvector`.
+- **Report** → Advanced SQL reporting (Postgres view + window functions) beyond typical JPA CRUD.
 - **Shared** → Cross-cutting concerns: JWT security, global exception handling, base entity auditing.
 
 ---
@@ -85,6 +90,27 @@ The system architecture treats infrastructure and external failures as first-cla
 - An administrative endpoint (`ADMIN`-only) triggers reprocessing of pending failures; a notification is only marked as resolved when redelivery genuinely succeeds.
 - Domain events are only published to listeners **after the originating transaction commits** (`@TransactionalEventListener(phase = AFTER_COMMIT)`), avoiding notifications for orders that end up rolled back.
 
+**✅ Kafka Consumer Resilience**
+- Payment events published to Kafka are consumed idempotently: an `event_id` unique constraint is claimed via insert-before-process (not check-then-act), so a redelivered message can never be processed twice, even under concurrency.
+- A `DefaultErrorHandler` with fixed backoff retries a failing message 3 times before routing it to a Dead Letter Topic (`payment.processed.DLT`) instead of blocking the consumer indefinitely — validated manually end-to-end with a malformed message sent directly via `kafka-console-producer`.
+
+## 🤖 AI / RAG Assistant
+
+A real Retrieval-Augmented Generation pipeline, running entirely on local infrastructure (Ollama) — no OpenAI key, no external API cost:
+
+- **Semantic search:** the product catalog is embedded (`nomic-embed-text`) into a `pgvector` store (Spring AI's `VectorStore` abstraction, backed by the same Postgres instance — no extra infra), reindexed reactively on every product create/update via the existing domain events.
+- **Grounded Q&A:** `POST /assistant/ask` embeds the question, retrieves the closest matching products by vector similarity, and grounds a local LLM's (`llama3.2:1b`) answer in that retrieved context.
+- **Structured retrieval, not just vectors:** `GET /assistant/restock-recommendations` feeds the LLM a real SQL aggregation of sales history + current stock (not a vector search) — the two retrieval strategies coexist on purpose, matching what a production RAG system actually looks like.
+- **Reactive, not manual:** a dedicated `aiExecutor` thread pool listens to `OrderRegisteredEvent` to signal low stock and to `ProductRegisteredEvent`/`ProductUpdatedEvent` to keep the vector index in sync, isolated from the `notification` module's own async pipeline.
+
+## 📈 Advanced SQL Reporting
+
+`GET /reports/product-sales` is backed by a real Postgres `VIEW` (`product_sales_report`), not another JPA aggregate query — joining `order_items`, `payments` (only `APPROVED`) and `products`, with **window functions** (`RANK() OVER`, `SUM() OVER()`) computing revenue rank and market-share percentage per product directly in SQL. The entity mapping it to (`@Subselect` + `@Immutable`) is read-only by design; the view itself is created/refreshed on every app boot via an `ApplicationRunner`, since it depends on tables Hibernate only creates at startup.
+
+## ☸️ Kubernetes
+
+Deployment manifests (`k8s/`) for the app + Postgres, validated against a real local cluster (Docker Desktop's Kubernetes), including an `initContainer` that polls the database port before the app container starts — Kubernetes has no built-in equivalent to Docker Compose's `depends_on: condition: service_healthy`, so without it the app would crash-loop against a database that isn't accepting connections yet.
+
 ## 🔐 Security Highlights
 
 - Stateless JWT (`Authorization: Bearer <token>`), no sessions, CSRF disabled (pure REST API).
@@ -94,15 +120,25 @@ The system architecture treats infrastructure and external failures as first-cla
 
 ## 🛠️ Tech Stack
 
+**Backend**
 - Java 21 (LTS)
 - Spring Boot 3.3
 - Spring Security (JWT + RBAC)
 - Spring Data JPA / Hibernate
 - Spring Retry & Spring Async
-- PostgreSQL
+- Spring Kafka
+- Spring AI (Ollama chat client + `pgvector` VectorStore)
+- PostgreSQL (+ `pgvector` extension)
+- Apache Kafka (KRaft, no Zookeeper)
+- Ollama (local LLM runtime — `llama3.2:1b`, `nomic-embed-text`)
 - Prometheus & Grafana (Observability)
 - Springdoc OpenAPI (Swagger UI)
-- Docker & Docker Compose
+- Docker & Docker Compose · Kubernetes manifests
+
+**Storefront**
+- Next.js 16 (App Router) · React 19 · TypeScript
+- Tailwind CSS v4 (design tokens as CSS custom properties)
+- Deployed on Vercel
 
 ---
 
@@ -112,7 +148,7 @@ The system architecture treats infrastructure and external failures as first-cla
 - Docker & Docker Compose
 - Java 21+ (only needed for running outside Docker)
 
-### Full stack (app + database + observability)
+### Full stack (app + database + Kafka + Ollama + observability)
 
 ```bash
 docker compose -f docker/docker-compose.yml up -d --build
@@ -124,6 +160,8 @@ docker compose -f docker/docker-compose.yml up -d --build
 | Swagger UI    | http://localhost:8080/swagger-ui.html              |
 | Prometheus    | http://localhost:9090                              |
 | Grafana       | http://localhost:3000 (admin/admin)                |
+
+Also brings up `postgres` (with `pgvector`), `kafka` (KRaft, single node) and `ollama` (pulls `llama3.2:1b` + `nomic-embed-text` on first boot) — everything the AI and payment modules need, no external accounts required.
 
 ### Running locally against Docker's database only
 
@@ -155,17 +193,20 @@ Runs the full suite (unit + integration) against a real PostgreSQL instance — 
 | POST   | `/orders`                     | `CLIENT`, `ADMIN`     | Place an order                         |
 | GET    | `/orders`                     | `CLIENT`, `ADMIN`     | List orders — `CLIENT` sees only their own, `ADMIN` sees all |
 | GET    | `/orders/{id}`                | `CLIENT`, `ADMIN`     | View an order — `CLIENT` gets 403 on orders they don't own |
+| POST   | `/orders/{orderId}/payments`  | `CLIENT`, `ADMIN`     | Pay for an order — publishes `PaymentProcessedEvent` to Kafka |
 | POST   | `/notifications/reprocess`    | `ADMIN`               | Manually reprocess failed notifications |
+| POST   | `/assistant/ask`              | `ADMIN`, `ATTENDANT`  | Semantic Q&A grounded in the product catalog (RAG) |
+| GET    | `/assistant/restock-recommendations` | `ADMIN`, `ATTENDANT` | LLM restock suggestions from real sales data |
+| GET    | `/reports/product-sales`      | `ADMIN`, `ATTENDANT`  | Revenue rank/share per product (SQL window functions) |
 
-Full request/response contracts are available via Swagger UI once the app is running.
+Full request/response contracts are available via Swagger UI once the app is running, or in the Postman collection at `docs/postman/`.
 
 ## 📊 Future Improvements
 
 - Outbox Pattern for guaranteed event delivery.
-- Message broker integration (RabbitMQ / Kafka) replacing the in-process event bus.
 - Circuit Breaker (Resilience4j) around external notification senders.
 - Distributed tracing.
-- React frontend consuming this API.
+- Real payment gateway integration (Pix/card via Mercado Pago, Pagar.me or Stripe) — the `payment` module's approval rule is currently deterministic for demo purposes, not wired to a real processor.
 
 ## 📁 Project Structure (Simplified)
 
@@ -173,7 +214,10 @@ Full request/response contracts are available via Swagger UI once the app is run
 user/
 product/
 order/
+payment/
 notification/
+ai/
+report/
 shared/
 ```
 
@@ -183,11 +227,13 @@ Each business module follows the same internal layering (`domain`, `application`
 
 This project was built to demonstrate:
 
-- Strong backend fundamentals (JPA/Hibernate, transactions, Bean Validation).
-- Real-world architectural decisions (modular monolith, event-driven internal communication).
+- Strong backend fundamentals (JPA/Hibernate, transactions, Bean Validation, advanced SQL).
+- Real-world architectural decisions (modular monolith, event-driven internal communication — both in-process and over a real message broker).
 - Production-grade security practices (JWT, RBAC, ownership-based authorization).
-- Resilience and failure handling under real async/retry conditions.
+- Resilience and failure handling under real async/retry/DLQ conditions.
 - A test suite that actually runs end-to-end, not just unit tests in isolation.
+- Applied AI (RAG) grounded in the system's own data, not a chatbot bolted on the side.
+- A full client (Next.js storefront + admin panel) consuming the API in production, not just Swagger calls.
 
 ## 📎 Repository
 
