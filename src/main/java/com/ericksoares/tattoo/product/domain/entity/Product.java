@@ -32,6 +32,9 @@ public class Product extends BaseEntity {
     @Column(length = 500)
     private String description;
 
+    @Column(length = 255)
+    private String imageUrl;
+
     public void validate() {
 
         if (name == null || name.isBlank()) {

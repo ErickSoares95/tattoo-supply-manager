@@ -45,7 +45,8 @@ class UpdateProductServiceTest {
                         "New Product",
                         "New Description",
                         BigDecimal.valueOf(100),
-                        20
+                        20,
+                        null
                 );
 
         when(repository.findById(1L))
@@ -76,7 +77,8 @@ class UpdateProductServiceTest {
                         "New Product",
                         "New Description",
                         BigDecimal.ZERO,
-                        20
+                        20,
+                        null
                 );
 
         when(repository.findById(1L))
@@ -101,7 +103,8 @@ class UpdateProductServiceTest {
                         "Product",
                         "Description",
                         BigDecimal.TEN,
-                        10
+                        10,
+                        null
                 );
 
         assertThrows(

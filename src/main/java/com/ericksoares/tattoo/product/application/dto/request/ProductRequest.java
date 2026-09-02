@@ -20,5 +20,10 @@ public record ProductRequest(
 
         @NotNull(message = "Stock is required")
         @Min(value = 0, message = "Stock cannot be negative")
-        Integer stock
+        Integer stock,
+
+        // Optional on purpose, same as User.imageUrl - admin pastes a URL from wherever
+        // the image is already hosted, no upload/storage endpoint added for this.
+        @Size(max = 255, message = "Image URL must be at most 255 characters")
+        String imageUrl
 ) {}

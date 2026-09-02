@@ -12,6 +12,7 @@ public class ProductMapper {
                         .description(request.description())
                         .price(request.price())
                         .stock(request.stock())
+                        .imageUrl(request.imageUrl())
                         .build();
     }
 
@@ -21,7 +22,8 @@ public class ProductMapper {
                 product.getName(),
                 product.getDescription(),
                 product.getPrice(),
-                product.getStock()
+                product.getStock(),
+                product.getImageUrl()
         );
     }
 }

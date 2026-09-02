@@ -34,6 +34,7 @@ public class UpdateProductService {
         product.setDescription(request.description());
         product.setPrice(request.price());
         product.setStock(request.stock());
+        product.setImageUrl(request.imageUrl());
 
         product.validate();
 

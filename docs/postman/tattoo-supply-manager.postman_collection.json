@@ -170,7 +170,7 @@
             "header": [ { "key": "Content-Type", "value": "application/json" } ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Tinta Black OPUS\",\n  \"description\": \"Tinta preta profissional para tatuagem, 30ml\",\n  \"price\": 89.90,\n  \"stock\": 50\n}"
+              "raw": "{\n  \"name\": \"Tinta Black OPUS\",\n  \"description\": \"Tinta preta profissional para tatuagem, 30ml\",\n  \"price\": 89.90,\n  \"stock\": 50,\n  \"imageUrl\": null\n}"
             },
             "url": { "raw": "{{baseUrl}}/products", "host": [ "{{baseUrl}}" ], "path": [ "products" ] },
             "description": "ADMIN only. Sets {{productId}} on success for the requests below."
@@ -226,7 +226,7 @@
             "header": [ { "key": "Content-Type", "value": "application/json" } ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Tinta Black OPUS\",\n  \"description\": \"Tinta preta profissional para tatuagem, 30ml - novo lote\",\n  \"price\": 94.90,\n  \"stock\": 40\n}"
+              "raw": "{\n  \"name\": \"Tinta Black OPUS\",\n  \"description\": \"Tinta preta profissional para tatuagem, 30ml - novo lote\",\n  \"price\": 94.90,\n  \"stock\": 40,\n  \"imageUrl\": \"https://example.com/tinta-black-opus.jpg\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": [ "{{baseUrl}}" ], "path": [ "products", "{{productId}}" ] },
             "description": "ADMIN only."

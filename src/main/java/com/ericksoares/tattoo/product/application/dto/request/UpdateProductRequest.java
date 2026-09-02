@@ -19,7 +19,13 @@ public record UpdateProductRequest(
 
         @NotNull
         @Min(0)
-        Integer stock
+        Integer stock,
+
+        // Optional, same as ProductRequest/User.imageUrl - a PUT still has to send this
+        // field (full replacement, not a patch), but null/blank is a valid value meaning
+        // "no image".
+        @Size(max = 255)
+        String imageUrl
 
 ) {
 }

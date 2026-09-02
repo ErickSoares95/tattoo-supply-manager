@@ -40,7 +40,8 @@ class RegisterProductServiceTest {
                         "Fonte FK Irons",
                         "Fonte profissional",
                         new BigDecimal("250"),
-                        10
+                        10,
+                        null
                 );
 
         Product product =
