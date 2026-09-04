@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -20,6 +21,9 @@ class FindProductByIdServiceTest {
 
     @Mock
     private ProductRepository repository;
+
+    @Mock
+    private ProductSalesLookup salesLookup;
 
     @InjectMocks
     private FindProductByIdService service;
@@ -35,6 +39,10 @@ class FindProductByIdServiceTest {
 
         when(repository.findById(1L))
                 .thenReturn(Optional.of(product));
+        when(salesLookup.loadUnitsSoldByProductId())
+                .thenReturn(Map.of());
+        when(salesLookup.unitsSoldFor(1L, Map.of()))
+                .thenReturn(0L);
 
         var response = service.execute(1L);
 
