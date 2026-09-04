@@ -14,6 +14,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -39,6 +40,12 @@ class FindAllProductsServiceTest {
         return product;
     }
 
+    private Product productOnDeal(Long id, String name) {
+        Product product = productWithId(id, name);
+        product.setCreationDate(LocalDateTime.now().minusMonths(4));
+        return product;
+    }
+
     // sort=unitsSold,desc can't be delegated to the database (units sold isn't a Product
     // column, see FindAllProductsService's comment) - this confirms the in-memory
     // fallback actually reorders by real sales instead of silently ignoring the sort.
@@ -56,7 +63,7 @@ class FindAllProductsServiceTest {
         when(salesLookup.unitsSoldFor(2L, Map.of(1L, 3L, 2L, 50L))).thenReturn(50L);
 
         var pageable = PageRequest.of(0, 10, Sort.by(Sort.Order.desc("unitsSold")));
-        var page = service.execute(new ProductFilterRequest(null, null, null, null, null, null), pageable);
+        var page = service.execute(new ProductFilterRequest(null, null, null, null, null, null, null), pageable);
 
         assertEquals(2, page.getContent().size());
         assertEquals("Best seller", page.getContent().get(0).name());
@@ -76,7 +83,7 @@ class FindAllProductsServiceTest {
         when(salesLookup.unitsSoldFor(any(), any())).thenReturn(0L);
 
         var pageable = PageRequest.of(1, 1, Sort.by(Sort.Order.desc("unitsSold")));
-        var page = service.execute(new ProductFilterRequest(null, null, null, null, null, null), pageable);
+        var page = service.execute(new ProductFilterRequest(null, null, null, null, null, null, null), pageable);
 
         assertEquals(1, page.getContent().size());
         assertEquals(3, page.getTotalElements());
@@ -93,10 +100,34 @@ class FindAllProductsServiceTest {
         when(salesLookup.unitsSoldFor(any(), any())).thenReturn(0L);
 
         var pageable = PageRequest.of(0, 10, Sort.by(Sort.Order.asc("price")));
-        var page = service.execute(new ProductFilterRequest(null, null, null, null, null, null), pageable);
+        var page = service.execute(new ProductFilterRequest(null, null, null, null, null, null, null), pageable);
 
         List<ProductResponse> content = page.getContent();
         assertEquals(1, content.size());
         assertEquals("Ink", content.get(0).name());
+    }
+
+    // onDeal isn't a real Product column either (Product.isOnDailyDeal is computed from
+    // creationDate) - same in-memory fallback as the unitsSold sort, this confirms
+    // filter.onDeal()=true actually excludes products that aren't eligible.
+    @Test
+    void shouldFilterToOnlyOnDealProductsWhenRequested() {
+
+        Product regular = productWithId(1L, "Regular");
+        Product onDeal = productOnDeal(2L, "On deal");
+
+        when(repository.findAll(any(Specification.class)))
+                .thenReturn(List.of(regular, onDeal));
+        when(salesLookup.loadUnitsSoldByProductId()).thenReturn(Map.of());
+        when(salesLookup.unitsSoldFor(any(), any())).thenReturn(0L);
+
+        var pageable = PageRequest.of(0, 10, Sort.unsorted());
+        var page = service.execute(
+                new ProductFilterRequest(null, null, null, null, null, null, true),
+                pageable
+        );
+
+        assertEquals(1, page.getContent().size());
+        assertEquals("On deal", page.getContent().get(0).name());
     }
 }
