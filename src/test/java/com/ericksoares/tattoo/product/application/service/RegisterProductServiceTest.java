@@ -4,6 +4,7 @@ import com.ericksoares.tattoo.product.application.dto.request.ProductRequest;
 import com.ericksoares.tattoo.product.application.dto.response.ProductResponse;
 import com.ericksoares.tattoo.product.application.mapper.ProductMapper;
 import com.ericksoares.tattoo.product.domain.entity.Product;
+import com.ericksoares.tattoo.product.domain.enums.ProductCategory;
 import com.ericksoares.tattoo.product.infrastructure.repository.ProductRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,7 +42,8 @@ class RegisterProductServiceTest {
                         "Fonte profissional",
                         new BigDecimal("250"),
                         10,
-                        null
+                        null,
+                        ProductCategory.ACCESSORIES
                 );
 
         Product product =

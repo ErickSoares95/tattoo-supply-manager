@@ -1,5 +1,6 @@
 package com.ericksoares.tattoo.product.application.dto.request;
 
+import com.ericksoares.tattoo.product.domain.enums.ProductCategory;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
@@ -25,5 +26,8 @@ public record ProductRequest(
         // Optional on purpose, same as User.imageUrl - admin pastes a URL from wherever
         // the image is already hosted, no upload/storage endpoint added for this.
         @Size(max = 255, message = "Image URL must be at most 255 characters")
-        String imageUrl
+        String imageUrl,
+
+        @NotNull(message = "Category is required")
+        ProductCategory category
 ) {}

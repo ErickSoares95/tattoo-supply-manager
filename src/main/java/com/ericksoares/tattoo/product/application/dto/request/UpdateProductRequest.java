@@ -1,5 +1,6 @@
 package com.ericksoares.tattoo.product.application.dto.request;
 
+import com.ericksoares.tattoo.product.domain.enums.ProductCategory;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 
@@ -25,7 +26,10 @@ public record UpdateProductRequest(
         // field (full replacement, not a patch), but null/blank is a valid value meaning
         // "no image".
         @Size(max = 255)
-        String imageUrl
+        String imageUrl,
+
+        @NotNull(message = "Category is required")
+        ProductCategory category
 
 ) {
 }

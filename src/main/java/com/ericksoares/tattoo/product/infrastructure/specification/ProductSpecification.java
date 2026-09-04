@@ -1,6 +1,7 @@
 package com.ericksoares.tattoo.product.infrastructure.specification;
 
 import com.ericksoares.tattoo.product.domain.entity.Product;
+import com.ericksoares.tattoo.product.domain.enums.ProductCategory;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
@@ -29,6 +30,12 @@ public class ProductSpecification {
         return (root, query, cb) ->
                 minStock == null ? null :
                         cb.greaterThanOrEqualTo(root.get("stock"), minStock);
+    }
+
+    public static Specification<Product> hasCategory(ProductCategory category) {
+        return (root, query, cb) ->
+                category == null ? null :
+                        cb.equal(root.get("category"), category);
     }
 
     public static Specification<Product> descriptionContains(String description) {

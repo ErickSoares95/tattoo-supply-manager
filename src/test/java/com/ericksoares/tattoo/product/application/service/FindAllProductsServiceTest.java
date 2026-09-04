@@ -56,7 +56,7 @@ class FindAllProductsServiceTest {
         when(salesLookup.unitsSoldFor(2L, Map.of(1L, 3L, 2L, 50L))).thenReturn(50L);
 
         var pageable = PageRequest.of(0, 10, Sort.by(Sort.Order.desc("unitsSold")));
-        var page = service.execute(new ProductFilterRequest(null, null, null, null, null), pageable);
+        var page = service.execute(new ProductFilterRequest(null, null, null, null, null, null), pageable);
 
         assertEquals(2, page.getContent().size());
         assertEquals("Best seller", page.getContent().get(0).name());
@@ -76,7 +76,7 @@ class FindAllProductsServiceTest {
         when(salesLookup.unitsSoldFor(any(), any())).thenReturn(0L);
 
         var pageable = PageRequest.of(1, 1, Sort.by(Sort.Order.desc("unitsSold")));
-        var page = service.execute(new ProductFilterRequest(null, null, null, null, null), pageable);
+        var page = service.execute(new ProductFilterRequest(null, null, null, null, null, null), pageable);
 
         assertEquals(1, page.getContent().size());
         assertEquals(3, page.getTotalElements());
@@ -93,7 +93,7 @@ class FindAllProductsServiceTest {
         when(salesLookup.unitsSoldFor(any(), any())).thenReturn(0L);
 
         var pageable = PageRequest.of(0, 10, Sort.by(Sort.Order.asc("price")));
-        var page = service.execute(new ProductFilterRequest(null, null, null, null, null), pageable);
+        var page = service.execute(new ProductFilterRequest(null, null, null, null, null, null), pageable);
 
         List<ProductResponse> content = page.getContent();
         assertEquals(1, content.size());

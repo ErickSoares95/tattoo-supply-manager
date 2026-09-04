@@ -13,6 +13,7 @@ public class ProductMapper {
                         .price(request.price())
                         .stock(request.stock())
                         .imageUrl(request.imageUrl())
+                        .category(request.category())
                         .build();
     }
 
@@ -31,6 +32,7 @@ public class ProductMapper {
                 product.getPrice(),
                 product.getStock(),
                 product.getImageUrl(),
+                product.getCategory(),
                 product.isOnDailyDeal(),
                 unitsSold
         );

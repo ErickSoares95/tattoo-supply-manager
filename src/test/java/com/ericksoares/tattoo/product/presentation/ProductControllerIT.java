@@ -99,12 +99,16 @@ class ProductControllerIT {
     )
     void shouldDenyAttendantCreateProduct() throws Exception {
 
+        // Needs a fully valid body (category included) - otherwise @Valid rejects it
+        // with 400 during argument resolution, before @PreAuthorize's proxy even runs,
+        // and this test would be asserting the wrong thing (validation, not authorization).
         String request = """
             {
               "name":"Ink Black",
               "description":"Black tattoo ink",
               "price":99.90,
-              "stock":10
+              "stock":10,
+              "category":"INKS"
             }
             """;
 
@@ -127,7 +131,8 @@ class ProductControllerIT {
           "name":"Ink Black",
           "description":"Black tattoo ink",
           "price":99.90,
-          "stock":10
+          "stock":10,
+          "category":"INKS"
         }
         """;
 

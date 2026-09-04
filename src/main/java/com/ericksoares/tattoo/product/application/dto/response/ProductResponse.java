@@ -1,5 +1,7 @@
 package com.ericksoares.tattoo.product.application.dto.response;
 
+import com.ericksoares.tattoo.product.domain.enums.ProductCategory;
+
 import java.math.BigDecimal;
 
 public record ProductResponse(
@@ -9,6 +11,10 @@ public record ProductResponse(
         BigDecimal price,
         Integer stock,
         String imageUrl,
+        // Nullable - the 5 products that existed before this field was added stay null
+        // until backfilled via PUT /products/{id} (same one-time backfill the imageUrl
+        // field needed).
+        ProductCategory category,
         boolean onDeal,
         // Units sold across ALL orders, regardless of payment status - deliberately NOT
         // the same "sales" concept as report.domain.entity.ProductSalesReport (that view

@@ -2,6 +2,7 @@ package com.ericksoares.tattoo.product.application.service;
 
 import com.ericksoares.tattoo.product.application.dto.request.UpdateProductRequest;
 import com.ericksoares.tattoo.product.domain.entity.Product;
+import com.ericksoares.tattoo.product.domain.enums.ProductCategory;
 import com.ericksoares.tattoo.product.domain.exception.InvalidProductPriceException;
 import com.ericksoares.tattoo.product.domain.exception.ProductNotFoundException;
 import com.ericksoares.tattoo.product.infrastructure.repository.ProductRepository;
@@ -46,7 +47,8 @@ class UpdateProductServiceTest {
                         "New Description",
                         BigDecimal.valueOf(100),
                         20,
-                        null
+                        null,
+                        ProductCategory.ACCESSORIES
                 );
 
         when(repository.findById(1L))
@@ -78,7 +80,8 @@ class UpdateProductServiceTest {
                         "New Description",
                         BigDecimal.ZERO,
                         20,
-                        null
+                        null,
+                        ProductCategory.ACCESSORIES
                 );
 
         when(repository.findById(1L))
@@ -104,7 +107,8 @@ class UpdateProductServiceTest {
                         "Description",
                         BigDecimal.TEN,
                         10,
-                        null
+                        null,
+                        ProductCategory.ACCESSORIES
                 );
 
         assertThrows(

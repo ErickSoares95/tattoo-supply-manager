@@ -45,6 +45,8 @@ public class FindAllProductsService {
                 ProductSpecification.priceLessThanOrEqual(filter.maxPrice())
         ).and(
                 ProductSpecification.stockGreaterThanOrEqual(filter.minStock())
+        ).and(
+                ProductSpecification.hasCategory(filter.category())
         );
 
         Map<Long, Long> salesByProductId = salesLookup.loadUnitsSoldByProductId();

@@ -1,5 +1,6 @@
 package com.ericksoares.tattoo.product.domain.entity;
 
+import com.ericksoares.tattoo.product.domain.enums.ProductCategory;
 import com.ericksoares.tattoo.product.domain.exception.InsufficientStockException;
 import com.ericksoares.tattoo.product.domain.exception.InvalidProductNameException;
 import com.ericksoares.tattoo.product.domain.exception.InvalidProductPriceException;
@@ -35,6 +36,17 @@ public class Product extends BaseEntity {
 
     @Column(length = 255)
     private String imageUrl;
+
+    // Nullable on purpose, unlike the rest of Product's required fields: the column was
+    // added after 5 real products already existed in production with no category concept
+    // at all (menu links all pointed at the same unfiltered /produtos before this). Bean
+    // Validation's @NotNull on ProductRequest/UpdateProductRequest is what actually
+    // enforces this for admin create/update from here on - validate() below stays
+    // lenient about it so the pre-existing rows don't start failing on their next save
+    // before someone backfills them.
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private ProductCategory category;
 
     public void validate() {
 
