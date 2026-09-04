@@ -23,7 +23,8 @@ public class ProductMapper {
                 product.getDescription(),
                 product.getPrice(),
                 product.getStock(),
-                product.getImageUrl()
+                product.getImageUrl(),
+                product.isOnDailyDeal()
         );
     }
 }

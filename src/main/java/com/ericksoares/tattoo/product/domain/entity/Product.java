@@ -10,6 +10,7 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "products")
@@ -55,5 +56,19 @@ public class Product extends BaseEntity {
             throw new InsufficientStockException(this.name);
         }
         this.stock -= quantity;
+    }
+
+    private static final int DAILY_DEAL_MONTHS_IN_STOCK = 3;
+
+    // Business rule confirmed with the user (2026-09-05): a product enters "Ofertas do
+    // dia" automatically once it's been sitting in the catalog/stock for 3+ months,
+    // counted from creationDate (BaseEntity) - no separate "entered stock" timestamp or
+    // batch/lot tracking exists (or is planned) yet, so creationDate doubles as that date.
+    // Deliberately no discounted price here: this only decides *eligibility* for the
+    // clearance shelf, it doesn't fabricate an oldPrice/discount the backend has no
+    // record of.
+    public boolean isOnDailyDeal() {
+        return getCreationDate() != null
+                && getCreationDate().isBefore(LocalDateTime.now().minusMonths(DAILY_DEAL_MONTHS_IN_STOCK));
     }
 }
