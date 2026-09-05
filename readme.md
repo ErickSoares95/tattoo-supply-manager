@@ -18,6 +18,8 @@ Demo accounts (seeded via `docker/seed-demo-data.sql`):
 
 > The backend runs on Render's free tier, so the first request after a period of inactivity may take 30-50s to respond while the instance spins back up. The storefront runs on Vercel and stays warm.
 
+> **What's live:** storefront, catalog, orders, the admin panel, and the full payment flow — payment events cross a managed Kafka broker (Redpanda Serverless) and are consumed asynchronously. The RAG assistant (`/assistant/**`) needs a running Ollama instance and is available on the local Docker stack only.
+
 The original React + Vite MVP is still up at [tattoo-supply-manager-frontend](https://github.com/ErickSoares95/tattoo-supply-manager-frontend) for reference, but the storefront above is the current, actively developed client.
 
 ---
@@ -93,7 +95,7 @@ The system architecture treats infrastructure and external failures as first-cla
 **✅ Transactional Outbox (Producer-side reliability)**
 - A payment and its `PaymentProcessedEvent` commit together: the event is written to an `outbox_events` row inside the same DB transaction, never published to Kafka inline. A scheduled poller relays PENDING rows to the broker afterwards.
 - Solves the dual-write problem — a broker outage (or a crash right after commit) can't lose the event or fail/hang the payment request. Rows that keep failing past a max-attempts threshold are parked as `FAILED` for inspection.
-- The client-facing config is env-driven (`KAFKA_SECURITY_PROTOCOL`, `KAFKA_SASL_MECHANISM`, `KAFKA_SASL_JAAS_CONFIG`), so the same build runs against the local plaintext broker or a managed SASL_SSL one (e.g. Redpanda Serverless).
+- The client-facing config is env-driven (`KAFKA_SECURITY_PROTOCOL`, `KAFKA_SASL_MECHANISM`, `KAFKA_SASL_JAAS_CONFIG`), so the same build runs against the local plaintext broker in development and a managed SASL_SSL one (Redpanda Serverless) in production — no code change.
 
 **✅ Kafka Consumer Resilience**
 - Payment events published to Kafka are consumed idempotently: an `event_id` unique constraint is claimed via insert-before-process (not check-then-act), so a redelivered message can never be processed twice, even under concurrency.
@@ -193,6 +195,8 @@ Runs the full suite (unit + integration) against a real PostgreSQL instance — 
 | POST   | `/auth/login`                 | Public                | Authenticate and receive a JWT         |
 | GET    | `/users`, `/users/{id}`       | `ADMIN`               | List / view accounts                   |
 | PUT    | `/users/{id}`                 | `ADMIN`               | Update an account, including role promotion |
+| GET / PUT | `/users/me`                | Authenticated         | View / edit your own profile (no role or status fields — can't self-promote) |
+| PATCH  | `/users/me/password`          | Authenticated         | Change your own password               |
 | GET    | `/products`, `/products/{id}` | Public               | Browse the catalog                     |
 | POST/PUT/DELETE | `/products/**`       | `ADMIN`               | Manage the catalog                     |
 | POST   | `/orders`                     | `CLIENT`, `ADMIN`     | Place an order                         |
@@ -209,10 +213,10 @@ Full request/response contracts are available via Swagger UI once the app is run
 
 ## 📊 Future Improvements
 
-- Outbox Pattern for guaranteed event delivery.
 - Circuit Breaker (Resilience4j) around external notification senders.
 - Distributed tracing.
 - Real payment gateway integration (Pix/card via Mercado Pago, Pagar.me or Stripe) — the `payment` module's approval rule is currently deterministic for demo purposes, not wired to a real processor.
+- RAG assistant in production — currently local-stack only (needs a running Ollama or an OpenAI-compatible endpoint); a deliberate cost trade-off, not a missing piece.
 
 ## 📁 Project Structure (Simplified)
 
