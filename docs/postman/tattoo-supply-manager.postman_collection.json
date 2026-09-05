@@ -146,6 +146,27 @@
           }
         },
         {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/users/me", "host": [ "{{baseUrl}}" ], "path": [ "users", "me" ] },
+            "description": "Any authenticated user, reads their own profile. \"me\" always comes from the JWT, unlike GET /users/{id} this needs no ADMIN role."
+          }
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"new_client\",\n  \"fullName\": \"New Client\",\n  \"phoneNumber\": \"11999999999\",\n  \"cpf\": \"12345678900\",\n  \"imageUrl\": null\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/users/me", "host": [ "{{baseUrl}}" ], "path": [ "users", "me" ] },
+            "description": "Any authenticated user, edits their own profile. No userType/userStatus fields exist on this request — a client can never self-promote or self-unblock through it, unlike PUT /users/{id} (Admin)."
+          }
+        },
+        {
           "name": "Change My Password",
           "request": {
             "method": "PATCH",

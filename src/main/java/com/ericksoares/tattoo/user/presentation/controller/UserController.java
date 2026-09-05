@@ -3,6 +3,7 @@ package com.ericksoares.tattoo.user.presentation.controller;
 import com.ericksoares.tattoo.shared.security.model.AuthenticatedUser;
 import com.ericksoares.tattoo.user.application.dto.request.ChangePasswordRequest;
 import com.ericksoares.tattoo.user.application.dto.request.CreateUserRequest;
+import com.ericksoares.tattoo.user.application.dto.request.UpdateProfileRequest;
 import com.ericksoares.tattoo.user.application.dto.request.UpdateUserRequest;
 import com.ericksoares.tattoo.user.application.dto.request.UserFilterRequest;
 import com.ericksoares.tattoo.user.application.dto.response.UserResponse;
@@ -27,6 +28,7 @@ public class UserController {
     private final FindUserByIdService findUserByIdService;
     private final CreateUserService createUserService;
     private final UpdateUserService updateUserService;
+    private final UpdateProfileService updateProfileService;
     private final DeleteUserService deleteUserService;
     private final ChangePasswordService changePasswordService;
 
@@ -85,6 +87,31 @@ public class UserController {
         deleteUserService.execute(id);
 
         return ResponseEntity.noContent().build();
+    }
+
+    // Self-service: any authenticated user reads/edits their own profile, no ADMIN role
+    // required (SecurityConfig's anyRequest().authenticated() covers these, same as
+    // /me/password below) - "me" always comes from the JWT principal, never a path
+    // variable, so there's no way to pass someone else's id here.
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> findOwnProfile(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+
+        return ResponseEntity.ok(
+                findUserByIdService.execute(authenticatedUser.getUser().getId())
+        );
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<UserResponse> updateOwnProfile(
+            @RequestBody @Valid UpdateProfileRequest request,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+
+        return ResponseEntity.ok(
+                updateProfileService.execute(authenticatedUser.getUser().getId(), request)
+        );
     }
 
     @PatchMapping("/me/password")
