@@ -41,7 +41,7 @@ The main goal is to simulate real-world enterprise backend challenges such as de
 - **User** → Authentication (JWT, login by email *or* CPF), account management, and Role-Based Access Control (`ADMIN`, `CLIENT`, `ATTENDANT`).
 - **Product** → Inventory control, validation constraints, and product management.
 - **Order** → Order creation, ownership-based authorization, and core business rules (stock validation, item pricing).
-- **Payment** → Payment processing per order, publishing to Kafka (`payment.processed`) for downstream consumers — decoupled from `notification` via a real message broker, not just an in-process event.
+- **Payment** → Payment processing per order, publishing to Kafka (`payment.processed`) via a **transactional outbox** for downstream consumers — decoupled from `notification` via a real message broker, not just an in-process event.
 - **Notification** → Async processing, per-channel retry isolation, failure persistence, and reprocessing — reacts to both in-process order events and Kafka payment events.
 - **AI** → Retrieval-Augmented Generation assistant (local LLM via Ollama, no external API keys) — restock recommendations from real sales data and semantic Q&A grounded in the product catalog via `pgvector`.
 - **Report** → Advanced SQL reporting (Postgres view + window functions) beyond typical JPA CRUD.
@@ -89,6 +89,11 @@ The system architecture treats infrastructure and external failures as first-cla
 - Failed asynchronous notifications are captured and stored in the database instead of being silently lost.
 - An administrative endpoint (`ADMIN`-only) triggers reprocessing of pending failures; a notification is only marked as resolved when redelivery genuinely succeeds.
 - Domain events are only published to listeners **after the originating transaction commits** (`@TransactionalEventListener(phase = AFTER_COMMIT)`), avoiding notifications for orders that end up rolled back.
+
+**✅ Transactional Outbox (Producer-side reliability)**
+- A payment and its `PaymentProcessedEvent` commit together: the event is written to an `outbox_events` row inside the same DB transaction, never published to Kafka inline. A scheduled poller relays PENDING rows to the broker afterwards.
+- Solves the dual-write problem — a broker outage (or a crash right after commit) can't lose the event or fail/hang the payment request. Rows that keep failing past a max-attempts threshold are parked as `FAILED` for inspection.
+- The client-facing config is env-driven (`KAFKA_SECURITY_PROTOCOL`, `KAFKA_SASL_MECHANISM`, `KAFKA_SASL_JAAS_CONFIG`), so the same build runs against the local plaintext broker or a managed SASL_SSL one (e.g. Redpanda Serverless).
 
 **✅ Kafka Consumer Resilience**
 - Payment events published to Kafka are consumed idempotently: an `event_id` unique constraint is claimed via insert-before-process (not check-then-act), so a redelivered message can never be processed twice, even under concurrency.
@@ -193,7 +198,8 @@ Runs the full suite (unit + integration) against a real PostgreSQL instance — 
 | POST   | `/orders`                     | `CLIENT`, `ADMIN`     | Place an order                         |
 | GET    | `/orders`                     | `CLIENT`, `ADMIN`     | List orders — `CLIENT` sees only their own, `ADMIN` sees all |
 | GET    | `/orders/{id}`                | `CLIENT`, `ADMIN`     | View an order — `CLIENT` gets 403 on orders they don't own |
-| POST   | `/orders/{orderId}/payments`  | `CLIENT`, `ADMIN`     | Pay for an order — publishes `PaymentProcessedEvent` to Kafka |
+| POST   | `/orders/{orderId}/payments`  | `CLIENT`, `ADMIN`     | Pay for an order — publishes `PaymentProcessedEvent` to Kafka via the transactional outbox |
+| GET    | `/orders/{orderId}/payments`  | `CLIENT`, `ADMIN`     | List an order's payment attempts (`CLIENT` gets 403 on orders they don't own) |
 | POST   | `/notifications/reprocess`    | `ADMIN`               | Manually reprocess failed notifications |
 | POST   | `/assistant/ask`              | `ADMIN`, `ATTENDANT`  | Semantic Q&A grounded in the product catalog (RAG) |
 | GET    | `/assistant/restock-recommendations` | `ADMIN`, `ATTENDANT` | LLM restock suggestions from real sales data |

@@ -6,6 +6,7 @@ import com.ericksoares.tattoo.notification.domain.entity.ProcessedPaymentEvent;
 import com.ericksoares.tattoo.notification.domain.repository.FailedPaymentNotificationRepository;
 import com.ericksoares.tattoo.notification.domain.repository.ProcessedPaymentEventRepository;
 import com.ericksoares.tattoo.payment.domain.event.PaymentProcessedEvent;
+import com.ericksoares.tattoo.payment.infrastructure.kafka.PaymentTopics;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -39,7 +40,7 @@ public class PaymentNotificationListener {
         this.processedRepository = processedRepository;
     }
 
-    @KafkaListener(topics = "payment.processed", groupId = "notification-service")
+    @KafkaListener(topics = PaymentTopics.PAYMENT_PROCESSED, groupId = "notification-service")
     public void handle(PaymentProcessedEvent event) {
 
         if (!claim(event)) {

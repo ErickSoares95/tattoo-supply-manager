@@ -318,7 +318,15 @@
               "raw": "{\n  \"amount\": 100.00,\n  \"method\": \"PIX\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/orders/{{orderId}}/payments", "host": [ "{{baseUrl}}" ], "path": [ "orders", "{{orderId}}", "payments" ] },
-            "description": "CLIENT (must own the order) or ADMIN. No real gateway yet - simulated: approves only when amount matches the order's total exactly, otherwise rejects (amount below is a placeholder, match it to the order's actual total). Publishes PaymentProcessedEvent to Kafka (payment.processed), consumed by the notification module - check app logs for the ntainer#0-... consumer thread. A second payment attempt on an already-approved order returns 409."
+            "description": "CLIENT (must own the order) or ADMIN. No real gateway yet - simulated: approves only when amount matches the order's total exactly, otherwise rejects (amount below is a placeholder, match it to the order's actual total). Writes a PaymentProcessedEvent to the transactional outbox in the same transaction; OutboxPoller relays it to Kafka (payment.processed), consumed by the notification module - check app logs for the scheduling-1 (poller) then ntainer#0-... (consumer) threads. A second payment attempt on an already-approved order returns 409."
+          }
+        },
+        {
+          "name": "List Order Payments (Client/Admin)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/orders/{{orderId}}/payments", "host": [ "{{baseUrl}}" ], "path": [ "orders", "{{orderId}}", "payments" ] },
+            "description": "CLIENT (must own the order) or ADMIN. Returns every payment attempt for the order, newest first - the storefront uses this to show whether an order is paid."
           }
         }
       ]

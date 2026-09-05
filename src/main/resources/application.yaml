@@ -29,6 +29,13 @@ spring:
         dimensions: 768
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    # Local docker-compose broker is plaintext; a managed broker (Redpanda Serverless)
+    # needs SASL_SSL + SCRAM. All env-driven so local/CI keep the plaintext defaults.
+    security:
+      protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
+    properties:
+      sasl.mechanism: ${KAFKA_SASL_MECHANISM:GSSAPI}
+      sasl.jaas.config: ${KAFKA_SASL_JAAS_CONFIG:}
     consumer:
       group-id: ${spring.application.name}
       auto-offset-reset: earliest
@@ -44,6 +51,13 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+# Transactional outbox relay (shared.outbox.OutboxPoller)
+outbox:
+  poll-interval-ms: ${OUTBOX_POLL_INTERVAL_MS:5000}
+  batch-size: ${OUTBOX_BATCH_SIZE:100}
+  max-attempts: ${OUTBOX_MAX_ATTEMPTS:10}
+  send-timeout-ms: ${OUTBOX_SEND_TIMEOUT_MS:10000}
 
 jwt:
   secret: ${JWT_SECRET:dev-only-secret-nao-usar-em-producao-troque-isso}

@@ -10,8 +10,9 @@ import com.ericksoares.tattoo.payment.domain.entity.Payment;
 import com.ericksoares.tattoo.payment.domain.entity.PaymentStatus;
 import com.ericksoares.tattoo.payment.domain.event.PaymentProcessedEvent;
 import com.ericksoares.tattoo.payment.domain.exception.OrderAlreadyPaidException;
-import com.ericksoares.tattoo.payment.infrastructure.kafka.PaymentEventProducer;
+import com.ericksoares.tattoo.payment.infrastructure.kafka.PaymentTopics;
 import com.ericksoares.tattoo.payment.infrastructure.repository.PaymentRepository;
+import com.ericksoares.tattoo.shared.outbox.OutboxService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -26,16 +27,16 @@ public class ProcessPaymentService {
 
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
-    private final PaymentEventProducer eventProducer;
+    private final OutboxService outboxService;
 
     public ProcessPaymentService(
             OrderRepository orderRepository,
             PaymentRepository paymentRepository,
-            PaymentEventProducer eventProducer
+            OutboxService outboxService
     ) {
         this.orderRepository = orderRepository;
         this.paymentRepository = paymentRepository;
-        this.eventProducer = eventProducer;
+        this.outboxService = outboxService;
     }
 
     @Transactional
@@ -65,13 +66,18 @@ public class ProcessPaymentService {
 
         log.info("Payment {} for order {} processed with status {}", saved.getId(), orderId, saved.getStatus());
 
-        eventProducer.publish(new PaymentProcessedEvent(
+        PaymentProcessedEvent event = new PaymentProcessedEvent(
                 UUID.randomUUID(),
                 orderId,
                 saved.getStatus(),
                 saved.getAmount(),
                 LocalDateTime.now()
-        ));
+        );
+
+        // Written to the outbox in this same transaction, not published straight to Kafka:
+        // the payment and its event commit together, and OutboxPoller relays it to the broker
+        // afterwards - so a broker outage can't fail (or hang) the payment request.
+        outboxService.enqueue(PaymentTopics.PAYMENT_PROCESSED, orderId.toString(), event);
 
         return PaymentMapper.toResponse(saved);
     }

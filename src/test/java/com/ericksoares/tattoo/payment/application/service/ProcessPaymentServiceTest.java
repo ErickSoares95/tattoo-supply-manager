@@ -9,8 +9,9 @@ import com.ericksoares.tattoo.payment.domain.entity.Payment;
 import com.ericksoares.tattoo.payment.domain.entity.PaymentStatus;
 import com.ericksoares.tattoo.payment.domain.event.PaymentProcessedEvent;
 import com.ericksoares.tattoo.payment.domain.exception.OrderAlreadyPaidException;
-import com.ericksoares.tattoo.payment.infrastructure.kafka.PaymentEventProducer;
+import com.ericksoares.tattoo.payment.infrastructure.kafka.PaymentTopics;
 import com.ericksoares.tattoo.payment.infrastructure.repository.PaymentRepository;
+import com.ericksoares.tattoo.shared.outbox.OutboxService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,6 +23,7 @@ import java.math.BigDecimal;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,7 +36,7 @@ class ProcessPaymentServiceTest {
     private PaymentRepository paymentRepository;
 
     @Mock
-    private PaymentEventProducer eventProducer;
+    private OutboxService outboxService;
 
     @InjectMocks
     private ProcessPaymentService service;
@@ -63,8 +65,12 @@ class ProcessPaymentServiceTest {
         verify(paymentRepository)
                 .save(any(Payment.class));
 
-        verify(eventProducer)
-                .publish(argThat(event -> event.status() == PaymentStatus.APPROVED && event.orderId().equals(1L)));
+        verify(outboxService).enqueue(
+                eq(PaymentTopics.PAYMENT_PROCESSED),
+                eq("1"),
+                argThat(payload -> payload instanceof PaymentProcessedEvent event
+                        && event.status() == PaymentStatus.APPROVED
+                        && event.orderId().equals(1L)));
     }
 
     @Test
@@ -88,8 +94,12 @@ class ProcessPaymentServiceTest {
 
         assertEquals(PaymentStatus.REJECTED, response.status());
 
-        verify(eventProducer)
-                .publish(argThat(event -> event.status() == PaymentStatus.REJECTED && event.orderId().equals(1L)));
+        verify(outboxService).enqueue(
+                eq(PaymentTopics.PAYMENT_PROCESSED),
+                eq("1"),
+                argThat(payload -> payload instanceof PaymentProcessedEvent event
+                        && event.status() == PaymentStatus.REJECTED
+                        && event.orderId().equals(1L)));
     }
 
     @Test
@@ -108,8 +118,8 @@ class ProcessPaymentServiceTest {
         verify(paymentRepository, never())
                 .save(any());
 
-        verify(eventProducer, never())
-                .publish(any());
+        verify(outboxService, never())
+                .enqueue(any(), any(), any());
     }
 
     @Test
@@ -137,8 +147,8 @@ class ProcessPaymentServiceTest {
         verify(paymentRepository, never())
                 .save(any());
 
-        verify(eventProducer, never())
-                .publish(any());
+        verify(outboxService, never())
+                .enqueue(any(), any(), any());
     }
 
     @Test
@@ -163,8 +173,8 @@ class ProcessPaymentServiceTest {
         verify(paymentRepository, never())
                 .save(any());
 
-        verify(eventProducer, never())
-                .publish(any());
+        verify(outboxService, never())
+                .enqueue(any(), any(), any());
     }
 
     @Test
