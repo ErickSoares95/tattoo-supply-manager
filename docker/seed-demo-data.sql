@@ -11,7 +11,7 @@ INSERT INTO users (username, email, password, full_name, user_status, user_type,
 VALUES
     ('demo_admin', 'admin@demo.com', '$2a$10$hcrYywnjm1opaPmPeOD6P.NMnNv51KNn1Or/zmOtTW2BftCMGEbxO', 'Demo Admin', 'ACTIVE', 'ADMIN', NULL, NULL, NULL, now(), now()),
     ('demo_client', 'client@demo.com', '$2a$10$errORthsSDTHrVROQeHRIuvNQhfxUSJdA9FqZO3z7fOgJkCdtsiaC', 'Demo Client', 'ACTIVE', 'CLIENT', NULL, NULL, NULL, now(), now()),
-    ('ericklira99', 'ericklira99@gmail.com', '$2a$10$kCiyeNpjltj271oqveQ9COdUw1LVO3WiwpIN2kcPQlM4vH93hg57.', 'Erick Soares', 'ACTIVE', 'ADMIN', NULL, NULL, NULL, now(), now())
+    ('ericklira99', 'ericklira99@gmail.com', '$2a$10$kCiyeNpjltj271oqveQ9COdUw1LVO3WiwpIN2kcPQlM4vH93hg57.', 'Erick Soares', 'ACTIVE', 'ADMIN', NULL, NULL, 'https://api.dicebear.com/9.x/fun-emoji/png?seed=tattoo-supply-manager&size=256&backgroundColor=b6e3f4,c0aede,ffd5dc', now(), now())
 ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO products (name, price, stock, description, creation_date, last_update_date)
