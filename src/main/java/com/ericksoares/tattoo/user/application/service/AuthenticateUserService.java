@@ -53,7 +53,8 @@ public class AuthenticateUserService {
                 user.getId(),
                 user.getFullName(),
                 user.getEmail(),
-                user.getUserType()
+                user.getUserType(),
+                user.getImageUrl()
         );
     }
 }

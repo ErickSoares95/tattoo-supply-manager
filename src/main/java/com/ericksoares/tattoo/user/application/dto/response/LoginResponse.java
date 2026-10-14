@@ -12,6 +12,8 @@ public record LoginResponse(
 
         String email,
 
-        UserType userType
+        UserType userType,
+
+        String imageUrl
 ) {
 }
