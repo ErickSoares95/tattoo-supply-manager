@@ -1,6 +1,10 @@
 server:
   port: ${PORT:8080}
 
+# Set KAFKA_ENABLED=false to run without a broker (outbox rows stay PENDING, no consumers).
+kafka:
+  enabled: ${KAFKA_ENABLED:true}
+
 spring:
   application:
     name: tattoo-supply-manager

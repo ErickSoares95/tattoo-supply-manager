@@ -18,7 +18,7 @@ Demo accounts (seeded via `docker/seed-demo-data.sql`):
 
 > The backend runs on Render's free tier, so the first request after a period of inactivity may take 30-50s to respond while the instance spins back up. The storefront runs on Vercel and stays warm.
 
-> **What's live:** storefront, catalog, orders, the admin panel, and the full payment flow — payment events cross a managed Kafka broker (Redpanda Serverless) and are consumed asynchronously. The RAG assistant (`/assistant/**`) needs a running Ollama instance and is available on the local Docker stack only.
+> **What's live:** storefront, catalog, orders, the admin panel and payments. Production runs with `KAFKA_ENABLED=false` (the managed Redpanda broker is no longer available): payments still work and outbox rows stay PENDING, but payment-triggered notifications, the DLT and the Kafka ping diagnostic are off. `KAFKA_ENABLED` defaults to `true` (local stack and full Kafka flow unchanged). The RAG assistant (`/assistant/**`) needs a running Ollama instance and is available on the local Docker stack only.
 
 The original React + Vite MVP is still up at [tattoo-supply-manager-frontend](https://github.com/ErickSoares95/tattoo-supply-manager-frontend) for reference, but the storefront above is the current, actively developed client.
 

@@ -1,5 +1,6 @@
 package com.ericksoares.tattoo.shared.config;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.apache.kafka.common.TopicPartition;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,7 @@ import org.springframework.util.backoff.FixedBackOff;
  * the message is republished to "<original-topic>.DLT" and the offset advances - the
  * consumer never gets stuck forever on one bad message, and the message isn't silently lost.
  */
+@ConditionalOnProperty(name = "kafka.enabled", havingValue = "true", matchIfMissing = true)
 @Configuration
 public class KafkaConfig {
 

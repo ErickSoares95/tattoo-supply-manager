@@ -1,5 +1,6 @@
 package com.ericksoares.tattoo.payment.infrastructure.kafka;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import com.ericksoares.tattoo.payment.application.dto.KafkaPingMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
  * serializer config correct) before any real payment domain code depends on it.
  */
 @Slf4j
+@ConditionalOnProperty(name = "kafka.enabled", havingValue = "true", matchIfMissing = true)
 @Component
 public class KafkaPingProducer {
 

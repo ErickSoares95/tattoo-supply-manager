@@ -1,5 +1,6 @@
 package com.ericksoares.tattoo.notification.event.kafka;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import com.ericksoares.tattoo.notification.application.service.NotificationService;
 import com.ericksoares.tattoo.notification.domain.entity.FailedPaymentNotification;
 import com.ericksoares.tattoo.notification.domain.entity.ProcessedPaymentEvent;
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
  * "claim before processing" pattern - see {@link #claim}.
  */
 @Slf4j
+@ConditionalOnProperty(name = "kafka.enabled", havingValue = "true", matchIfMissing = true)
 @Component
 public class PaymentNotificationListener {
 

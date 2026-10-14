@@ -45,6 +45,8 @@ it's hard, just to keep this gap's scope focused.
    ```
    Then hit `http://localhost:8080/actuator/health` or any other endpoint as usual.
 
+Set `KAFKA_ENABLED=false` on the app to skip all Kafka beans entirely (no broker needed; this is how production runs).
+
 **Expected warnings in the logs:** Kafka connection retries and Ollama-related logs -
 those services aren't deployed in this scope yet (see "Scope" above). The app boots
 fine anyway; Spring Kafka/Spring AI don't hard-fail startup when their broker/model

@@ -1,5 +1,6 @@
 package com.ericksoares.tattoo.payment.presentation.controller;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import com.ericksoares.tattoo.payment.infrastructure.kafka.KafkaPingProducer;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,6 +17,7 @@ import java.util.Map;
  * Not part of the payment domain itself — just proves the broker is reachable
  * before {@code PaymentProcessedEvent} depends on it (increment 2).
  */
+@ConditionalOnProperty(name = "kafka.enabled", havingValue = "true", matchIfMissing = true)
 @RestController
 @RequestMapping("/payments/diagnostics")
 @CrossOrigin(origins = "*", maxAge = 3600)

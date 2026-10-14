@@ -1,5 +1,6 @@
 package com.ericksoares.tattoo.payment.infrastructure.kafka;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,6 +12,7 @@ import org.springframework.kafka.config.TopicBuilder;
  * creates any missing ones on startup, using broker-default partitions/replication
  * (so this stays valid whether the broker forces replication factor 1 or 3).
  */
+@ConditionalOnProperty(name = "kafka.enabled", havingValue = "true", matchIfMissing = true)
 @Configuration
 public class PaymentKafkaConfig {
 

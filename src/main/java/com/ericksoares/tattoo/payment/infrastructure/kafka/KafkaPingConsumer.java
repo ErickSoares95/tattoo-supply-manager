@@ -1,5 +1,6 @@
 package com.ericksoares.tattoo.payment.infrastructure.kafka;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import com.ericksoares.tattoo.payment.application.dto.KafkaPingMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
  * to prove producer + broker + consumer are wired correctly end to end.
  */
 @Slf4j
+@ConditionalOnProperty(name = "kafka.enabled", havingValue = "true", matchIfMissing = true)
 @Component
 public class KafkaPingConsumer {
 

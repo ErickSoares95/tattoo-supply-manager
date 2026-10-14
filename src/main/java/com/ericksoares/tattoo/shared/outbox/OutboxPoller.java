@@ -1,5 +1,6 @@
 package com.ericksoares.tattoo.shared.outbox;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +25,7 @@ import java.util.concurrent.TimeUnit;
  * failing past {@code outbox.max-attempts} is parked as FAILED for a human to look at.
  */
 @Slf4j
+@ConditionalOnProperty(name = "kafka.enabled", havingValue = "true", matchIfMissing = true)
 @Component
 public class OutboxPoller {
 
