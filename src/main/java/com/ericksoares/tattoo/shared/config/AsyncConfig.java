@@ -49,6 +49,17 @@ class AsyncConfig {
         };
     }
 
+    /**
+     * AI work (re-indexing a product, low-stock signals) is best effort: nothing is persisted, and
+     * POST /assistant/reindex-catalog rebuilds the whole index. A rejected task is dropped with a
+     * warning instead of a TaskRejectedException, so the outcome is explicit in the logs.
+     */
+    RejectedExecutionHandler dropOnRejection() {
+        return (task, pool) -> log.warn(
+                "AI executor rejected a task (queue full or shutting down); dropped - "
+                        + "run POST /assistant/reindex-catalog if the product index looks stale");
+    }
+
     @Bean(name = "aiExecutor")
     public Executor aiExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -57,6 +68,7 @@ class AsyncConfig {
         executor.setMaxPoolSize(3);
         executor.setQueueCapacity(50);
         executor.setThreadNamePrefix("ai-");
+        executor.setRejectedExecutionHandler(dropOnRejection());
 
         executor.initialize();
         return executor;
