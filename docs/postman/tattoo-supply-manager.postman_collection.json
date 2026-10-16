@@ -318,7 +318,7 @@
               "raw": "{\n  \"amount\": 100.00,\n  \"method\": \"PIX\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/orders/{{orderId}}/payments", "host": [ "{{baseUrl}}" ], "path": [ "orders", "{{orderId}}", "payments" ] },
-            "description": "CLIENT (must own the order) or ADMIN. No real gateway yet - simulated: approves only when amount matches the order's total exactly, otherwise rejects (amount below is a placeholder, match it to the order's actual total). Writes a PaymentProcessedEvent to the transactional outbox in the same transaction; OutboxPoller relays it to Kafka (payment.processed), consumed by the notification module - check app logs for the scheduling-1 (poller) then ntainer#0-... (consumer) threads. A second payment attempt on an already-approved order returns 409."
+            "description": "CLIENT (must own the order) or ADMIN. No real gateway yet - simulated: approves only when amount matches the order's total exactly, otherwise rejects (amount below is a placeholder, match it to the order's actual total). Publishes an in-process PaymentProcessedEvent; after the transaction commits, the notification module sends the payment confirmed/rejected notification on the notificationExecutor pool - check app logs for the notification-* thread. Failed channels go to failed_payment_notifications and are retried by NotificationRetryJob. A second payment attempt on an already-approved order returns 409."
           }
         },
         {

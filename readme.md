@@ -18,7 +18,9 @@ Demo accounts (seeded via `docker/seed-demo-data.sql`):
 
 > The backend runs on Render's free tier, so the first request after a period of inactivity may take 30-50s to respond while the instance spins back up. The storefront runs on Vercel and stays warm.
 
-> **What's live:** storefront, catalog, orders, the admin panel and payments. Production runs with `KAFKA_ENABLED=false` (the managed Redpanda broker is no longer available): payments still work and outbox rows stay PENDING, but payment-triggered notifications, the DLT and the Kafka ping diagnostic are off. `KAFKA_ENABLED` defaults to `true` (local stack and full Kafka flow unchanged). The RAG assistant (`/assistant/**`) needs a running Ollama instance and is available on the local Docker stack only.
+> **What's live:** storefront, catalog, orders, the admin panel, payments and payment notifications (in-process, no message broker needed). The RAG assistant (`/assistant/**`) needs a running Ollama instance and is available on the local Docker stack only.
+
+> **Upgrading an existing database:** Kafka and the transactional outbox were removed (the app is a monolith; payment notifications now use an in-process event). Databases created by older versions keep two orphan tables, `outbox_events` and `processed_payment_events`, that nothing reads anymore. Dropping them is optional and manual: `DROP TABLE IF EXISTS outbox_events, processed_payment_events;`
 
 The original React + Vite MVP is still up at [tattoo-supply-manager-frontend](https://github.com/ErickSoares95/tattoo-supply-manager-frontend) for reference, but the storefront above is the current, actively developed client.
 
@@ -43,8 +45,8 @@ The main goal is to simulate real-world enterprise backend challenges such as de
 - **User** → Authentication (JWT, login by email *or* CPF), account management, and Role-Based Access Control (`ADMIN`, `CLIENT`, `ATTENDANT`).
 - **Product** → Inventory control, validation constraints, and product management.
 - **Order** → Order creation, ownership-based authorization, and core business rules (stock validation, item pricing).
-- **Payment** → Payment processing per order, publishing to Kafka (`payment.processed`) via a **transactional outbox** for downstream consumers — decoupled from `notification` via a real message broker, not just an in-process event.
-- **Notification** → Async processing, per-channel retry isolation, failure persistence, and reprocessing — reacts to both in-process order events and Kafka payment events.
+- **Payment** → Payment processing per order, publishing an in-process `PaymentProcessedEvent` after commit — decoupled from `notification` the same way orders are.
+- **Notification** → Async processing, per-channel retry isolation, failure persistence, and reprocessing — reacts to order and payment events.
 - **AI** → Retrieval-Augmented Generation assistant (local LLM via Ollama, no external API keys) — restock recommendations from real sales data and semantic Q&A grounded in the product catalog via `pgvector`.
 - **Report** → Advanced SQL reporting (Postgres view + window functions) beyond typical JPA CRUD.
 - **Shared** → Cross-cutting concerns: JWT security, global exception handling, base entity auditing.
@@ -92,14 +94,9 @@ The system architecture treats infrastructure and external failures as first-cla
 - An administrative endpoint (`ADMIN`-only) triggers reprocessing of pending failures; a notification is only marked as resolved when redelivery genuinely succeeds.
 - Domain events are only published to listeners **after the originating transaction commits** (`@TransactionalEventListener(phase = AFTER_COMMIT)`), avoiding notifications for orders that end up rolled back.
 
-**✅ Transactional Outbox (Producer-side reliability)**
-- A payment and its `PaymentProcessedEvent` commit together: the event is written to an `outbox_events` row inside the same DB transaction, never published to Kafka inline. A scheduled poller relays PENDING rows to the broker afterwards.
-- Solves the dual-write problem — a broker outage (or a crash right after commit) can't lose the event or fail/hang the payment request. Rows that keep failing past a max-attempts threshold are parked as `FAILED` for inspection.
-- The client-facing config is env-driven (`KAFKA_SECURITY_PROTOCOL`, `KAFKA_SASL_MECHANISM`, `KAFKA_SASL_JAAS_CONFIG`), so the same build runs against the local plaintext broker in development and a managed SASL_SSL one (Redpanda Serverless) in production — no code change.
-
-**✅ Kafka Consumer Resilience**
-- Payment events published to Kafka are consumed idempotently: an `event_id` unique constraint is claimed via insert-before-process (not check-then-act), so a redelivered message can never be processed twice, even under concurrency.
-- A `DefaultErrorHandler` with fixed backoff retries a failing message 3 times before routing it to a Dead Letter Topic (`payment.processed.DLT`) instead of blocking the consumer indefinitely — validated manually end-to-end with a malformed message sent directly via `kafka-console-producer`.
+**✅ Payment Notifications (same pipeline as orders)**
+- `PaymentProcessedEvent` → `PaymentNotificationListener` (`AFTER_COMMIT`, so a rolled-back payment never notifies) → `notificationExecutor` → senders. A channel that fails is stored as one `failed_payment_notifications` row per sender and replayed by the scheduled `NotificationRetryJob` (or `POST /notifications/reprocess`), only through the channel that failed.
+- If the executor is saturated, the rejected task persists one pending row per sender (due right away) instead of dropping the notification.
 
 ## 🤖 AI / RAG Assistant
 
@@ -133,10 +130,8 @@ Deployment manifests (`k8s/`) for the app + Postgres, validated against a real l
 - Spring Security (JWT + RBAC)
 - Spring Data JPA / Hibernate
 - Spring Retry & Spring Async
-- Spring Kafka
 - Spring AI (Ollama chat client + `pgvector` VectorStore)
 - PostgreSQL (+ `pgvector` extension)
-- Apache Kafka (KRaft, no Zookeeper)
 - Ollama (local LLM runtime — `llama3.2:1b`, `nomic-embed-text`)
 - Prometheus & Grafana (Observability)
 - Springdoc OpenAPI (Swagger UI)
@@ -155,7 +150,7 @@ Deployment manifests (`k8s/`) for the app + Postgres, validated against a real l
 - Docker & Docker Compose
 - Java 21+ (only needed for running outside Docker)
 
-### Full stack (app + database + Kafka + Ollama + observability)
+### Full stack (app + database + Ollama + observability)
 
 ```bash
 docker compose -f docker/docker-compose.yml up -d --build
@@ -168,7 +163,7 @@ docker compose -f docker/docker-compose.yml up -d --build
 | Prometheus    | http://localhost:9090                              |
 | Grafana       | http://localhost:3000 (admin/admin)                |
 
-Also brings up `postgres` (with `pgvector`), `kafka` (KRaft, single node) and `ollama` (pulls `llama3.2:1b` + `nomic-embed-text` on first boot) — everything the AI and payment modules need, no external accounts required.
+Also brings up `postgres` (with `pgvector`) and `ollama` (pulls `llama3.2:1b` + `nomic-embed-text` on first boot) — everything the AI and payment modules need, no external accounts required.
 
 ### Running locally against Docker's database only
 
@@ -202,7 +197,7 @@ Runs the full suite (unit + integration) against a real PostgreSQL instance — 
 | POST   | `/orders`                     | `CLIENT`, `ADMIN`     | Place an order                         |
 | GET    | `/orders`                     | `CLIENT`, `ADMIN`     | List orders — `CLIENT` sees only their own, `ADMIN` sees all |
 | GET    | `/orders/{id}`                | `CLIENT`, `ADMIN`     | View an order — `CLIENT` gets 403 on orders they don't own |
-| POST   | `/orders/{orderId}/payments`  | `CLIENT`, `ADMIN`     | Pay for an order — publishes `PaymentProcessedEvent` to Kafka via the transactional outbox |
+| POST   | `/orders/{orderId}/payments`  | `CLIENT`, `ADMIN`     | Pay for an order — publishes `PaymentProcessedEvent`, which triggers the payment notification after commit |
 | GET    | `/orders/{orderId}/payments`  | `CLIENT`, `ADMIN`     | List an order's payment attempts (`CLIENT` gets 403 on orders they don't own) |
 | POST   | `/notifications/reprocess`    | `ADMIN`               | Manually reprocess failed notifications |
 | POST   | `/assistant/ask`              | `ADMIN`, `ATTENDANT`  | Semantic Q&A grounded in the product catalog (RAG) |

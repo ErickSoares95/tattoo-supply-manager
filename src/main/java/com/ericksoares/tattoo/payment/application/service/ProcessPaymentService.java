@@ -10,10 +10,9 @@ import com.ericksoares.tattoo.payment.domain.entity.Payment;
 import com.ericksoares.tattoo.payment.domain.entity.PaymentStatus;
 import com.ericksoares.tattoo.payment.domain.event.PaymentProcessedEvent;
 import com.ericksoares.tattoo.payment.domain.exception.OrderAlreadyPaidException;
-import com.ericksoares.tattoo.payment.infrastructure.kafka.PaymentTopics;
 import com.ericksoares.tattoo.payment.infrastructure.repository.PaymentRepository;
-import com.ericksoares.tattoo.shared.outbox.OutboxService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,16 +26,16 @@ public class ProcessPaymentService {
 
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
-    private final OutboxService outboxService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ProcessPaymentService(
             OrderRepository orderRepository,
             PaymentRepository paymentRepository,
-            OutboxService outboxService
+            ApplicationEventPublisher eventPublisher
     ) {
         this.orderRepository = orderRepository;
         this.paymentRepository = paymentRepository;
-        this.outboxService = outboxService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -74,10 +73,10 @@ public class ProcessPaymentService {
                 LocalDateTime.now()
         );
 
-        // Written to the outbox in this same transaction, not published straight to Kafka:
-        // the payment and its event commit together, and OutboxPoller relays it to the broker
-        // afterwards - so a broker outage can't fail (or hang) the payment request.
-        outboxService.enqueue(PaymentTopics.PAYMENT_PROCESSED, orderId.toString(), event);
+        // In-process event: the notification listener runs AFTER_COMMIT, so a payment whose
+        // transaction rolls back never notifies anyone. eventId is the correlation id stored on
+        // failed_payment_notifications rows.
+        eventPublisher.publishEvent(event);
 
         return PaymentMapper.toResponse(saved);
     }

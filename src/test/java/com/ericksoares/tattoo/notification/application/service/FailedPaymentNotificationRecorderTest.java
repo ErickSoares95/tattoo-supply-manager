@@ -57,6 +57,28 @@ class FailedPaymentNotificationRecorderTest {
     }
 
     @Test
+    void shouldRecordRejectedTaskWithZeroAttemptsDueRightAway() {
+
+        UUID eventId = UUID.randomUUID();
+
+        recorder().recordRejected(eventId, 7L, "REJECTED", BigDecimal.TEN, "EMAIL");
+
+        ArgumentCaptor<FailedPaymentNotification> saved = ArgumentCaptor.forClass(FailedPaymentNotification.class);
+        verify(repository).save(saved.capture());
+
+        FailedPaymentNotification row = saved.getValue();
+        assertEquals(eventId, row.getEventId());
+        assertEquals(7L, row.getOrderId());
+        assertEquals("REJECTED", row.getStatus());
+        assertEquals(BigDecimal.TEN, row.getAmount());
+        assertEquals("EMAIL", row.getSenderName());
+        assertEquals(0, row.getAttempts());
+        assertFalse(row.getProcessed());
+        assertNotNull(row.getErrorMessage());
+        assertAround(Instant.now(), row.getNextAttemptAt());
+    }
+
+    @Test
     void shouldRecordPermanentFirstFailureAsTerminalRightAway() {
 
         recorder().recordFailure(UUID.randomUUID(), 7L, "REJECTED", BigDecimal.TEN,

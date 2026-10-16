@@ -17,12 +17,6 @@ public interface FailedPaymentNotificationRepository
     List<FailedPaymentNotification> findByProcessedFalse();
 
     /**
-     * Whether a failure row for this (event, sender) was already written - keeps a redelivered
-     * event from duplicating rows.
-     */
-    boolean existsByEventIdAndSenderName(java.util.UUID eventId, String senderName);
-
-    /**
      * Unprocessed failures that still have attempts left and are not leased by another
      * worker, oldest first, keyset-paginated by id (0 for the first page).
      */

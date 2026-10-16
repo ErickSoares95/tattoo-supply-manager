@@ -14,9 +14,9 @@ import java.util.Optional;
 import java.util.function.LongFunction;
 
 /**
- * Replays failed payment notifications from the {@code failed_payment_notifications} table
- * (never from Kafka: the event's claim was consumed before the first send), only through the
- * sender that failed, guarded by an atomic lease like {@link NotificationReprocessService}.
+ * Replays failed payment notifications from the {@code failed_payment_notifications} table,
+ * only through the sender that failed, guarded by an atomic lease like
+ * {@link NotificationReprocessService}.
  */
 @Service
 @Slf4j

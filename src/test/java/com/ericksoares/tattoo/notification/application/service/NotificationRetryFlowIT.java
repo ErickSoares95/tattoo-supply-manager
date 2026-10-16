@@ -4,8 +4,7 @@ import com.ericksoares.tattoo.notification.domain.entity.FailedNotification;
 import com.ericksoares.tattoo.notification.domain.entity.FailedPaymentNotification;
 import com.ericksoares.tattoo.notification.domain.repository.FailedNotificationRepository;
 import com.ericksoares.tattoo.notification.domain.repository.FailedPaymentNotificationRepository;
-import com.ericksoares.tattoo.notification.domain.repository.ProcessedPaymentEventRepository;
-import com.ericksoares.tattoo.notification.event.kafka.PaymentNotificationListener;
+import com.ericksoares.tattoo.notification.event.PaymentNotificationListener;
 import com.ericksoares.tattoo.notification.infrastructure.email.EmailNotificationSender;
 import com.ericksoares.tattoo.notification.infrastructure.webhook.WebhookNotificationSender;
 import com.ericksoares.tattoo.notification.infrastructure.whatsapp.WhatsAppNotificationSender;
@@ -83,8 +82,6 @@ class NotificationRetryFlowIT {
     @Autowired
     private FailedPaymentNotificationRepository failedPaymentRepository;
     @Autowired
-    private ProcessedPaymentEventRepository processedPaymentEventRepository;
-    @Autowired
     private NotificationReprocessService reprocessService;
     @Autowired
     private PaymentNotificationReprocessService paymentReprocessService;
@@ -93,7 +90,6 @@ class NotificationRetryFlowIT {
 
     private final List<Long> orderIds = new ArrayList<>();
     private final List<Long> productIds = new ArrayList<>();
-    private final List<UUID> eventIds = new ArrayList<>();
 
     @AfterEach
     void cleanUp() {
@@ -105,9 +101,6 @@ class NotificationRetryFlowIT {
                 .filter(f -> relatedOrders.contains(f.getOrderId())).toList());
         failedPaymentRepository.deleteAll(failedPaymentRepository.findAll().stream()
                 .filter(f -> relatedOrders.contains(f.getOrderId())).toList());
-        eventIds.forEach(id -> processedPaymentEventRepository.findAll().stream()
-                .filter(e -> id.equals(e.getEventId()))
-                .forEach(processedPaymentEventRepository::delete));
 
         orderRepository.deleteAllById(orderIds);
         productRepository.deleteAllById(productIds);
@@ -252,10 +245,13 @@ class NotificationRetryFlowIT {
             doThrow(down).when(whatsapp).sendPaymentRejected(anyLong());
 
             UUID eventId = UUID.randomUUID();
-            eventIds.add(eventId);
 
             paymentListener.handle(new PaymentProcessedEvent(
                     eventId, PAYMENT_ORDER_ID, status, BigDecimal.TEN, LocalDateTime.now()));
+
+            // The listener hands the work to notificationExecutor, so the rows show up asynchronously.
+            await().atMost(Duration.ofSeconds(15))
+                    .untilAsserted(() -> assertEquals(2, paymentFailuresOf(PAYMENT_ORDER_ID).size()));
 
             List<FailedPaymentNotification> rows = paymentFailuresOf(PAYMENT_ORDER_ID);
             assertEquals(2, rows.size(), "one row per failed sender for " + status);

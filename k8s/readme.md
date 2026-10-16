@@ -3,12 +3,11 @@
 Basic manifests for the core of the stack (app + Postgres), showing the same
 docker-compose setup (`docker/docker-compose.yml`) expressed as Kubernetes objects.
 
-**Scope (deliberately limited for now):** app + Postgres only. Kafka, Ollama, and
-Prometheus/Grafana aren't manifested yet - they'd follow the same recipe (Kafka as a
-StatefulSet + headless Service since it needs stable per-broker identity, unlike this
-Postgres's simpler single-replica Deployment; Ollama/Prometheus/Grafana as plain
+**Scope (deliberately limited for now):** app + Postgres only. Ollama and
+Prometheus/Grafana aren't manifested yet - they'd follow the same recipe (plain
 Deployments + Services, same shape as Postgres here). Left as a next step, not because
-it's hard, just to keep this gap's scope focused.
+it's hard, just to keep this gap's scope focused. The app needs no message broker:
+payment notifications run in-process.
 
 ## What's here
 
@@ -45,13 +44,10 @@ it's hard, just to keep this gap's scope focused.
    ```
    Then hit `http://localhost:8080/actuator/health` or any other endpoint as usual.
 
-Set `KAFKA_ENABLED=false` on the app to skip all Kafka beans entirely (no broker needed; this is how production runs).
-
-**Expected warnings in the logs:** Kafka connection retries and Ollama-related logs -
-those services aren't deployed in this scope yet (see "Scope" above). The app boots
-fine anyway; Spring Kafka/Spring AI don't hard-fail startup when their broker/model
-server isn't reachable, they just log and retry in the background (same behavior
-already relied on in CI, which also doesn't run Kafka/Ollama as service containers).
+**Expected warnings in the logs:** Ollama-related logs - Ollama isn't deployed in this
+scope yet (see "Scope" above). The app boots fine anyway; Spring AI doesn't hard-fail
+startup when the model server isn't reachable (same behavior already relied on in CI,
+which also doesn't run Ollama as a service container).
 
 ## Tear down
 

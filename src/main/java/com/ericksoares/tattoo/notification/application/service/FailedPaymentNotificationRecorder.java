@@ -17,7 +17,8 @@ import java.util.UUID;
 /**
  * Persists the bookkeeping of failed payment notifications (one row per payment event and
  * sender), same rules as {@link FailedNotificationRecorder}. Every method opens its own
- * transaction because callers (the Kafka listener, the retry job) have none to join.
+ * transaction because callers (the payment notification task after commit, the executor's
+ * rejecting thread, the retry job) have none to join.
  */
 @Slf4j
 @Component
@@ -37,19 +38,28 @@ public class FailedPaymentNotificationRecorder {
             UUID eventId, Long orderId, String status, BigDecimal amount, SenderFailure failure
     ) {
 
-        FailedPaymentNotification row = new FailedPaymentNotification();
-
-        row.setEventId(eventId);
-        row.setOrderId(orderId);
-        row.setStatus(status);
-        row.setAmount(amount);
-        row.setSenderName(failure.senderName());
-        row.setCreatedAt(LocalDateTime.now());
-        row.setProcessed(false);
+        FailedPaymentNotification row = newRow(eventId, orderId, status, amount, failure.senderName());
         row.setAttempts(0);
 
         registerAttemptFailure(row, failure.error());
         return row;
+    }
+
+    /**
+     * The executor refused the task before any delivery was attempted: record it with zero
+     * attempts, due right away for the scheduled retry.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public FailedPaymentNotification recordRejected(
+            UUID eventId, Long orderId, String status, BigDecimal amount, String senderName
+    ) {
+
+        FailedPaymentNotification row = newRow(eventId, orderId, status, amount, senderName);
+        row.setAttempts(0);
+        row.setNextAttemptAt(Instant.now());
+        row.setErrorMessage("Notification executor rejected the task (queue full or shutting down)");
+
+        return repository.save(row);
     }
 
     /**
@@ -97,6 +107,23 @@ public class FailedPaymentNotificationRecorder {
         }
 
         repository.save(row);
+    }
+
+    private FailedPaymentNotification newRow(
+            UUID eventId, Long orderId, String status, BigDecimal amount, String senderName
+    ) {
+
+        FailedPaymentNotification row = new FailedPaymentNotification();
+
+        row.setEventId(eventId);
+        row.setOrderId(orderId);
+        row.setStatus(status);
+        row.setAmount(amount);
+        row.setSenderName(senderName);
+        row.setCreatedAt(LocalDateTime.now());
+        row.setProcessed(false);
+
+        return row;
     }
 
     private String describe(Exception error) {
