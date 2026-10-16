@@ -6,9 +6,9 @@ import com.ericksoares.tattoo.order.application.dto.OrderResponse;
 import com.ericksoares.tattoo.order.domain.entity.Order;
 import com.ericksoares.tattoo.order.domain.exception.InvalidOrderItemQuantityException;
 import com.ericksoares.tattoo.order.infrasctruture.repository.OrderRepository;
-import com.ericksoares.tattoo.product.domain.entity.Product;
+import com.ericksoares.tattoo.product.application.dto.response.ReservedProduct;
+import com.ericksoares.tattoo.product.application.service.ProductInventory;
 import com.ericksoares.tattoo.product.domain.exception.ProductNotFoundException;
-import com.ericksoares.tattoo.product.infrastructure.repository.ProductRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,16 +18,17 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class RegisterOrderTransactionTest {
 
     @Mock
-    private ProductRepository productRepository;
+    private ProductInventory productInventory;
 
     @Mock
     private OrderRepository orderRepository;
@@ -41,13 +42,6 @@ class RegisterOrderTransactionTest {
     @Test
     void shouldRegisterOrderSuccessfully() {
 
-        Product product = Product.builder()
-                .id(1L)
-                .name("Fonte Dragon")
-                .price(BigDecimal.valueOf(100))
-                .stock(10)
-                .build();
-
         OrderRequest request = new OrderRequest(
                 List.of(
                         new OrderItemRequest(
@@ -57,8 +51,8 @@ class RegisterOrderTransactionTest {
                 )
         );
 
-        when(productRepository.findById(1L))
-                .thenReturn(Optional.of(product));
+        when(productInventory.reserve(1L, 2))
+                .thenReturn(new ReservedProduct(1L, "Fonte Dragon", BigDecimal.valueOf(100)));
 
         when(orderRepository.save(any(Order.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -71,8 +65,8 @@ class RegisterOrderTransactionTest {
 
         assertEquals("Fonte Dragon", order.items().get(0).productName());
 
-        verify(productRepository)
-                .findById(1L);
+        verify(productInventory)
+                .reserve(1L, 2);
 
         verify(orderRepository)
                 .save(any(Order.class));
@@ -93,8 +87,8 @@ class RegisterOrderTransactionTest {
                 )
         );
 
-        when(productRepository.findById(999L))
-                .thenReturn(Optional.empty());
+        when(productInventory.reserve(999L, 1))
+                .thenThrow(new ProductNotFoundException(999L));
 
         assertThrows(
                 ProductNotFoundException.class,
@@ -109,47 +103,33 @@ class RegisterOrderTransactionTest {
     }
 
     @Test
-    void shouldDecreaseProductStock() {
-
-        Product product = Product.builder()
-                .id(1L)
-                .name("Máquina Pen")
-                .price(BigDecimal.valueOf(150))
-                .stock(10)
-                .build();
+    void shouldReserveStockForEachItem() {
 
         OrderRequest request = new OrderRequest(
                 List.of(
-                        new OrderItemRequest(
-                                1L,
-                                3
-                        )
+                        new OrderItemRequest(1L, 3),
+                        new OrderItemRequest(2L, 1)
                 )
         );
 
-        when(productRepository.findById(1L))
-                .thenReturn(Optional.of(product));
+        when(productInventory.reserve(1L, 3))
+                .thenReturn(new ReservedProduct(1L, "Máquina Pen", BigDecimal.valueOf(150)));
+        when(productInventory.reserve(2L, 1))
+                .thenReturn(new ReservedProduct(2L, "Tinta Black", BigDecimal.valueOf(50)));
 
         when(orderRepository.save(any(Order.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        service.execute(request, 1L);
+        OrderResponse order = service.execute(request, 1L);
 
-        assertEquals(
-                7,
-                product.getStock()
-        );
+        assertEquals(0, BigDecimal.valueOf(500).compareTo(order.total()));
+
+        verify(productInventory).reserve(1L, 3);
+        verify(productInventory).reserve(2L, 1);
     }
 
     @Test
-    void shouldThrowAndNotDecreaseStockWhenQuantityIsInvalid() {
-
-        Product product = Product.builder()
-                .id(1L)
-                .name("Tinta Black")
-                .price(BigDecimal.valueOf(50))
-                .stock(10)
-                .build();
+    void shouldThrowAndNotReserveStockWhenQuantityIsInvalid() {
 
         OrderRequest request = new OrderRequest(
                 List.of(
@@ -160,18 +140,13 @@ class RegisterOrderTransactionTest {
                 )
         );
 
-        when(productRepository.findById(1L))
-                .thenReturn(Optional.of(product));
-
         assertThrows(
                 InvalidOrderItemQuantityException.class,
                 () -> service.execute(request, 1L)
         );
 
-        assertEquals(
-                10,
-                product.getStock()
-        );
+        verify(productInventory, never())
+                .reserve(anyLong(), anyInt());
 
         verify(orderRepository, never())
                 .save(any());

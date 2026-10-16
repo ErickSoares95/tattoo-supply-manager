@@ -1,6 +1,5 @@
 package com.ericksoares.tattoo.shared.security;
 
-import com.ericksoares.tattoo.shared.security.service.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -22,7 +22,8 @@ public class JwtAuthenticationFilter
 
     private final JwtService jwtService;
 
-    private final CustomUserDetailsService
+    // Implemented by the user module (CustomUserDetailsService); shared only knows the interface.
+    private final UserDetailsService
             userDetailsService;
 
     @Override

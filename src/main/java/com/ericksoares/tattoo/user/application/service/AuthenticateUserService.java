@@ -6,6 +6,7 @@ import com.ericksoares.tattoo.user.application.dto.request.LoginRequest;
 import com.ericksoares.tattoo.user.application.dto.response.LoginResponse;
 import com.ericksoares.tattoo.user.domain.entity.User;
 import com.ericksoares.tattoo.user.domain.exception.InvalidCredentialsException;
+import com.ericksoares.tattoo.user.infrastructure.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,6 +23,8 @@ public class AuthenticateUserService {
     private final AuthenticationManager authenticationManager;
 
     private final JwtService jwtService;
+
+    private final UserRepository userRepository;
 
     public LoginResponse execute(LoginRequest request) {
 
@@ -42,11 +45,15 @@ public class AuthenticateUserService {
             throw new InvalidCredentialsException();
         }
 
-        // CustomUserDetailsService already resolved login (email OR cpf) to this User -
-        // reusing it here avoids a second, redundant repository lookup by a different key.
-        User user = ((AuthenticatedUser) authentication.getPrincipal()).getUser();
+        // CustomUserDetailsService already resolved login (email OR cpf) to this principal -
+        // reloading by its id (same transaction, so the persistence context already holds
+        // the User) gets the profile fields the principal deliberately doesn't carry.
+        AuthenticatedUser principal = (AuthenticatedUser) authentication.getPrincipal();
 
-        String token = jwtService.generateToken(user);
+        User user = userRepository.findById(principal.getId())
+                .orElseThrow(InvalidCredentialsException::new);
+
+        String token = jwtService.generateToken(principal);
 
         return new LoginResponse(
                 token,

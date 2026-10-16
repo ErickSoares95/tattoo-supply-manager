@@ -42,7 +42,7 @@ public class OrderController {
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(service.execute(request, authenticatedUser.getUser().getId()));
+                .body(service.execute(request, authenticatedUser.getId()));
     }
 
     @GetMapping
@@ -51,10 +51,10 @@ public class OrderController {
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             Pageable pageable
     ) {
-        boolean isAdmin = authenticatedUser.getUser().getUserType() == UserType.ADMIN;
+        boolean isAdmin = UserType.ADMIN.name().equals(authenticatedUser.getRole());
 
         return ResponseEntity.ok(
-                findOrdersService.execute(authenticatedUser.getUser().getId(), isAdmin, pageable)
+                findOrdersService.execute(authenticatedUser.getId(), isAdmin, pageable)
         );
     }
 
@@ -64,10 +64,10 @@ public class OrderController {
             @PathVariable Long id,
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser
     ) {
-        boolean isAdmin = authenticatedUser.getUser().getUserType() == UserType.ADMIN;
+        boolean isAdmin = UserType.ADMIN.name().equals(authenticatedUser.getRole());
 
         return ResponseEntity.ok(
-                findOrderByIdService.execute(id, authenticatedUser.getUser().getId(), isAdmin)
+                findOrderByIdService.execute(id, authenticatedUser.getId(), isAdmin)
         );
     }
 }

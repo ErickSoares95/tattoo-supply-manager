@@ -2,8 +2,8 @@ package com.ericksoares.tattoo.ai.event;
 
 import com.ericksoares.tattoo.order.application.dto.OrderItemData;
 import com.ericksoares.tattoo.order.domain.event.OrderRegisteredEvent;
-import com.ericksoares.tattoo.product.domain.entity.Product;
-import com.ericksoares.tattoo.product.infrastructure.repository.ProductRepository;
+import com.ericksoares.tattoo.product.application.dto.response.ProductSnapshot;
+import com.ericksoares.tattoo.product.application.service.ProductCatalog;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -22,10 +22,10 @@ public class LowStockSignalListener {
 
     private static final int LOW_STOCK_THRESHOLD = 10;
 
-    private final ProductRepository productRepository;
+    private final ProductCatalog productCatalog;
 
-    public LowStockSignalListener(ProductRepository productRepository) {
-        this.productRepository = productRepository;
+    public LowStockSignalListener(ProductCatalog productCatalog) {
+        this.productCatalog = productCatalog;
     }
 
     @Async("aiExecutor")
@@ -34,19 +34,19 @@ public class LowStockSignalListener {
 
         for (OrderItemData item : event.items()) {
 
-            productRepository.findById(item.productId())
-                    .filter(product -> product.getStock() <= LOW_STOCK_THRESHOLD)
+            productCatalog.findById(item.productId())
+                    .filter(product -> product.stock() <= LOW_STOCK_THRESHOLD)
                     .ifPresent(this::signalLowStock);
         }
     }
 
-    private void signalLowStock(Product product) {
+    private void signalLowStock(ProductSnapshot product) {
 
         log.warn(
                 "LOW STOCK signal: product '{}' (id {}) has only {} units left (threshold {})",
-                product.getName(),
-                product.getId(),
-                product.getStock(),
+                product.name(),
+                product.id(),
+                product.stock(),
                 LOW_STOCK_THRESHOLD
         );
     }

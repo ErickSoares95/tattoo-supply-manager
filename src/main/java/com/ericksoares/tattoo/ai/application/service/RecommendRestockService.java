@@ -2,10 +2,10 @@ package com.ericksoares.tattoo.ai.application.service;
 
 import com.ericksoares.tattoo.ai.application.dto.ProductSalesSummary;
 import com.ericksoares.tattoo.ai.application.dto.RestockRecommendationResponse;
-import com.ericksoares.tattoo.order.infrasctruture.repository.OrderItemRepository;
-import com.ericksoares.tattoo.order.infrasctruture.repository.OrderItemRepository.ProductSalesProjection;
-import com.ericksoares.tattoo.product.domain.entity.Product;
-import com.ericksoares.tattoo.product.infrastructure.repository.ProductRepository;
+import com.ericksoares.tattoo.order.application.dto.ProductUnitsSold;
+import com.ericksoares.tattoo.order.application.service.OrderLookup;
+import com.ericksoares.tattoo.product.application.dto.response.ProductSnapshot;
+import com.ericksoares.tattoo.product.application.service.ProductCatalog;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,24 +15,24 @@ import java.util.stream.Collectors;
 @Service
 public class RecommendRestockService {
 
-    private final OrderItemRepository orderItemRepository;
-    private final ProductRepository productRepository;
+    private final OrderLookup orderLookup;
+    private final ProductCatalog productCatalog;
     private final LlmClient llmClient;
 
     public RecommendRestockService(
-            OrderItemRepository orderItemRepository,
-            ProductRepository productRepository,
+            OrderLookup orderLookup,
+            ProductCatalog productCatalog,
             LlmClient llmClient
     ) {
-        this.orderItemRepository = orderItemRepository;
-        this.productRepository = productRepository;
+        this.orderLookup = orderLookup;
+        this.productCatalog = productCatalog;
         this.llmClient = llmClient;
     }
 
     public RestockRecommendationResponse execute() {
 
-        List<ProductSalesProjection> salesSummary =
-                orderItemRepository.findProductSalesSummary();
+        List<ProductUnitsSold> salesSummary =
+                orderLookup.findUnitsSoldByProduct();
 
         if (salesSummary.isEmpty()) {
             return new RestockRecommendationResponse(
@@ -41,17 +41,17 @@ public class RecommendRestockService {
             );
         }
 
-        Map<Long, Integer> currentStockByProductId = productRepository
-                .findAllById(salesSummary.stream().map(ProductSalesProjection::getProductId).toList())
+        Map<Long, Integer> currentStockByProductId = productCatalog
+                .findAllById(salesSummary.stream().map(ProductUnitsSold::productId).toList())
                 .stream()
-                .collect(Collectors.toMap(Product::getId, Product::getStock));
+                .collect(Collectors.toMap(ProductSnapshot::id, ProductSnapshot::stock));
 
         List<ProductSalesSummary> basedOn = salesSummary.stream()
                 .map(row -> new ProductSalesSummary(
-                        row.getProductId(),
-                        row.getProductName(),
-                        row.getTotalSold(),
-                        currentStockByProductId.getOrDefault(row.getProductId(), 0)
+                        row.productId(),
+                        row.productName(),
+                        row.totalSold(),
+                        currentStockByProductId.getOrDefault(row.productId(), 0)
                 ))
                 .toList();
 

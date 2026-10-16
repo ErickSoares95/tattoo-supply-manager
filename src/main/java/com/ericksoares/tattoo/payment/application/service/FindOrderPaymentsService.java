@@ -1,8 +1,7 @@
 package com.ericksoares.tattoo.payment.application.service;
 
-import com.ericksoares.tattoo.order.domain.entity.Order;
-import com.ericksoares.tattoo.order.domain.exception.OrderNotFoundException;
-import com.ericksoares.tattoo.order.infrasctruture.repository.OrderRepository;
+import com.ericksoares.tattoo.order.application.dto.OrderSummary;
+import com.ericksoares.tattoo.order.application.service.OrderLookup;
 import com.ericksoares.tattoo.payment.application.dto.PaymentResponse;
 import com.ericksoares.tattoo.payment.application.mapper.PaymentMapper;
 import com.ericksoares.tattoo.payment.infrastructure.repository.PaymentRepository;
@@ -21,20 +20,19 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class FindOrderPaymentsService {
 
-    private final OrderRepository orderRepository;
+    private final OrderLookup orderLookup;
     private final PaymentRepository paymentRepository;
 
-    public FindOrderPaymentsService(OrderRepository orderRepository, PaymentRepository paymentRepository) {
-        this.orderRepository = orderRepository;
+    public FindOrderPaymentsService(OrderLookup orderLookup, PaymentRepository paymentRepository) {
+        this.orderLookup = orderLookup;
         this.paymentRepository = paymentRepository;
     }
 
     public List<PaymentResponse> execute(Long orderId, Long userId, boolean isAdmin) {
 
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        OrderSummary order = orderLookup.findSummary(orderId);
 
-        if (!isAdmin && !order.getUserId().equals(userId)) {
+        if (!isAdmin && !order.userId().equals(userId)) {
             throw new AccessDeniedException("You do not have permission to view payments for this order");
         }
 

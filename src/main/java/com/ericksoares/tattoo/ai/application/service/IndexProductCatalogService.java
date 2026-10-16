@@ -1,7 +1,7 @@
 package com.ericksoares.tattoo.ai.application.service;
 
-import com.ericksoares.tattoo.product.domain.entity.Product;
-import com.ericksoares.tattoo.product.infrastructure.repository.ProductRepository;
+import com.ericksoares.tattoo.product.application.dto.response.ProductSnapshot;
+import com.ericksoares.tattoo.product.application.service.ProductCatalog;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
@@ -18,42 +18,42 @@ import java.util.UUID;
 @Service
 public class IndexProductCatalogService {
 
-    private final ProductRepository productRepository;
+    private final ProductCatalog productCatalog;
     private final VectorStore vectorStore;
 
-    public IndexProductCatalogService(ProductRepository productRepository, VectorStore vectorStore) {
-        this.productRepository = productRepository;
+    public IndexProductCatalogService(ProductCatalog productCatalog, VectorStore vectorStore) {
+        this.productCatalog = productCatalog;
         this.vectorStore = vectorStore;
     }
 
     public int indexAll() {
 
-        List<Product> products = productRepository.findAll();
+        List<ProductSnapshot> products = productCatalog.findAll();
 
         vectorStore.add(products.stream().map(this::toDocument).toList());
 
         return products.size();
     }
 
-    public void indexOne(Product product) {
+    public void indexOne(ProductSnapshot product) {
 
         vectorStore.add(List.of(toDocument(product)));
     }
 
-    private Document toDocument(Product product) {
+    private Document toDocument(ProductSnapshot product) {
 
         String content = "%s: %s (price: %s, stock: %d)".formatted(
-                product.getName(),
-                product.getDescription(),
-                product.getPrice(),
-                product.getStock()
+                product.name(),
+                product.description(),
+                product.price(),
+                product.stock()
         );
 
         return Document.builder()
-                .id(deterministicId(product.getId()))
+                .id(deterministicId(product.id()))
                 .text(content)
-                .metadata("productId", product.getId())
-                .metadata("productName", product.getName())
+                .metadata("productId", product.id())
+                .metadata("productName", product.name())
                 .build();
     }
 

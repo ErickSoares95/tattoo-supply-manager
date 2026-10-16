@@ -8,6 +8,7 @@ import com.ericksoares.tattoo.user.domain.entity.User;
 import com.ericksoares.tattoo.user.domain.enums.UserStatus;
 import com.ericksoares.tattoo.user.domain.enums.UserType;
 import com.ericksoares.tattoo.user.domain.exception.InvalidCredentialsException;
+import com.ericksoares.tattoo.user.infrastructure.repositories.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -17,6 +18,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -30,6 +33,9 @@ class AuthenticateUserServiceTest {
 
     @Mock
     private AuthenticationManager authenticationManager;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private AuthenticateUserService service;
@@ -54,12 +60,14 @@ class AuthenticateUserServiceTest {
 
         Authentication mockAuthentication = mock(Authentication.class);
         when(mockAuthentication.getPrincipal())
-                .thenReturn(new AuthenticatedUser(user));
+                .thenReturn(CustomUserDetailsService.toAuthenticatedUser(user));
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(mockAuthentication);
 
-        when(jwtService.generateToken(user))
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        when(jwtService.generateToken(any(AuthenticatedUser.class)))
                 .thenReturn("jwt-token");
 
         LoginResponse response = service.execute(request);
@@ -78,12 +86,14 @@ class AuthenticateUserServiceTest {
 
         Authentication mockAuthentication = mock(Authentication.class);
         when(mockAuthentication.getPrincipal())
-                .thenReturn(new AuthenticatedUser(user));
+                .thenReturn(CustomUserDetailsService.toAuthenticatedUser(user));
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(mockAuthentication);
 
-        when(jwtService.generateToken(user))
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        when(jwtService.generateToken(any(AuthenticatedUser.class)))
                 .thenReturn("jwt-token");
 
         LoginResponse response = service.execute(request);

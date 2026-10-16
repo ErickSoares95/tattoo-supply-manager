@@ -9,6 +9,7 @@ import com.ericksoares.tattoo.payment.infrastructure.repository.PaymentRepositor
 import com.ericksoares.tattoo.product.domain.entity.Product;
 import com.ericksoares.tattoo.product.infrastructure.repository.ProductRepository;
 import com.ericksoares.tattoo.shared.security.model.AuthenticatedUser;
+import com.ericksoares.tattoo.user.application.service.CustomUserDetailsService;
 import com.ericksoares.tattoo.user.domain.entity.User;
 import com.ericksoares.tattoo.user.domain.enums.UserStatus;
 import com.ericksoares.tattoo.user.domain.enums.UserType;
@@ -107,7 +108,7 @@ class ReportControllerIT {
     }
 
     private RequestPostProcessor as(User user) {
-        AuthenticatedUser principal = new AuthenticatedUser(user);
+        AuthenticatedUser principal = CustomUserDetailsService.toAuthenticatedUser(user);
         Authentication auth = new UsernamePasswordAuthenticationToken(
                 principal, null, principal.getAuthorities()
         );

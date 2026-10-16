@@ -35,10 +35,10 @@ public class PaymentController {
             @Valid @RequestBody PaymentRequest request,
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser
     ) {
-        boolean isAdmin = authenticatedUser.getUser().getUserType() == UserType.ADMIN;
+        boolean isAdmin = UserType.ADMIN.name().equals(authenticatedUser.getRole());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(
-                processService.execute(orderId, request, authenticatedUser.getUser().getId(), isAdmin)
+                processService.execute(orderId, request, authenticatedUser.getId(), isAdmin)
         );
     }
 
@@ -48,10 +48,10 @@ public class PaymentController {
             @PathVariable Long orderId,
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser
     ) {
-        boolean isAdmin = authenticatedUser.getUser().getUserType() == UserType.ADMIN;
+        boolean isAdmin = UserType.ADMIN.name().equals(authenticatedUser.getRole());
 
         return ResponseEntity.ok(
-                findService.execute(orderId, authenticatedUser.getUser().getId(), isAdmin)
+                findService.execute(orderId, authenticatedUser.getId(), isAdmin)
         );
     }
 }

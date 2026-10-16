@@ -1,10 +1,10 @@
 package com.ericksoares.tattoo.ai.application.service;
 
 import com.ericksoares.tattoo.ai.application.dto.RestockRecommendationResponse;
-import com.ericksoares.tattoo.order.infrasctruture.repository.OrderItemRepository;
-import com.ericksoares.tattoo.order.infrasctruture.repository.OrderItemRepository.ProductSalesProjection;
-import com.ericksoares.tattoo.product.domain.entity.Product;
-import com.ericksoares.tattoo.product.infrastructure.repository.ProductRepository;
+import com.ericksoares.tattoo.order.application.dto.ProductUnitsSold;
+import com.ericksoares.tattoo.order.application.service.OrderLookup;
+import com.ericksoares.tattoo.product.application.dto.response.ProductSnapshot;
+import com.ericksoares.tattoo.product.application.service.ProductCatalog;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -16,7 +16,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -24,10 +23,10 @@ import static org.mockito.Mockito.when;
 class RecommendRestockServiceTest {
 
     @Mock
-    private OrderItemRepository orderItemRepository;
+    private OrderLookup orderLookup;
 
     @Mock
-    private ProductRepository productRepository;
+    private ProductCatalog productCatalog;
 
     @Mock
     private LlmClient llmClient;
@@ -38,7 +37,7 @@ class RecommendRestockServiceTest {
     @Test
     void shouldReturnCannedResponseWithoutCallingLlmWhenNoSalesHistory() {
 
-        when(orderItemRepository.findProductSalesSummary())
+        when(orderLookup.findUnitsSoldByProduct())
                 .thenReturn(List.of());
 
         RestockRecommendationResponse response = service.execute();
@@ -50,22 +49,11 @@ class RecommendRestockServiceTest {
     @Test
     void shouldBuildContextAndReturnLlmRecommendation() {
 
-        ProductSalesProjection row = mock(ProductSalesProjection.class);
-        when(row.getProductId()).thenReturn(1L);
-        when(row.getProductName()).thenReturn("Tattoo Ink - Black");
-        when(row.getTotalSold()).thenReturn(50L);
+        when(orderLookup.findUnitsSoldByProduct())
+                .thenReturn(List.of(new ProductUnitsSold(1L, "Tattoo Ink - Black", 50L)));
 
-        when(orderItemRepository.findProductSalesSummary())
-                .thenReturn(List.of(row));
-
-        Product product = Product.builder()
-                .name("Tattoo Ink - Black")
-                .stock(5)
-                .build();
-        product.setId(1L);
-
-        when(productRepository.findAllById(List.of(1L)))
-                .thenReturn(List.of(product));
+        when(productCatalog.findAllById(List.of(1L)))
+                .thenReturn(List.of(new ProductSnapshot(1L, "Tattoo Ink - Black", null, null, 5)));
 
         when(llmClient.complete(anyString()))
                 .thenReturn("Restock Tattoo Ink - Black soon.");

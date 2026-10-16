@@ -1,8 +1,8 @@
 package com.ericksoares.tattoo.payment.application.service;
 
-import com.ericksoares.tattoo.order.domain.entity.Order;
+import com.ericksoares.tattoo.order.application.dto.OrderSummary;
 import com.ericksoares.tattoo.order.domain.exception.OrderNotFoundException;
-import com.ericksoares.tattoo.order.infrasctruture.repository.OrderRepository;
+import com.ericksoares.tattoo.order.application.service.OrderLookup;
 import com.ericksoares.tattoo.payment.application.dto.PaymentRequest;
 import com.ericksoares.tattoo.payment.application.dto.PaymentResponse;
 import com.ericksoares.tattoo.payment.domain.entity.Payment;
@@ -19,7 +19,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -29,7 +28,7 @@ import static org.mockito.Mockito.*;
 class ProcessPaymentServiceTest {
 
     @Mock
-    private OrderRepository orderRepository;
+    private OrderLookup orderLookup;
 
     @Mock
     private PaymentRepository paymentRepository;
@@ -43,16 +42,11 @@ class ProcessPaymentServiceTest {
     @Test
     void shouldApprovePaymentWhenAmountMatchesOrderTotal() {
 
-        Order order = Order.builder()
-                .id(1L)
-                .userId(10L)
-                .total(BigDecimal.valueOf(100))
-                .build();
+        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.valueOf(100));
 
         PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), "PIX");
 
-        when(orderRepository.findById(1L))
-                .thenReturn(Optional.of(order));
+        when(orderLookup.findSummary(1L)).thenReturn(order);
 
         when(paymentRepository.save(any(Payment.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -73,16 +67,11 @@ class ProcessPaymentServiceTest {
     @Test
     void shouldRejectPaymentWhenAmountDivergesFromOrderTotal() {
 
-        Order order = Order.builder()
-                .id(1L)
-                .userId(10L)
-                .total(BigDecimal.valueOf(100))
-                .build();
+        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.valueOf(100));
 
         PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(50), "PIX");
 
-        when(orderRepository.findById(1L))
-                .thenReturn(Optional.of(order));
+        when(orderLookup.findSummary(1L)).thenReturn(order);
 
         when(paymentRepository.save(any(Payment.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -102,8 +91,7 @@ class ProcessPaymentServiceTest {
 
         PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), "PIX");
 
-        when(orderRepository.findById(999L))
-                .thenReturn(Optional.empty());
+        when(orderLookup.findSummary(999L)).thenThrow(new OrderNotFoundException(999L));
 
         assertThrows(
                 OrderNotFoundException.class,
@@ -120,16 +108,11 @@ class ProcessPaymentServiceTest {
     @Test
     void shouldThrowExceptionWhenOrderAlreadyHasApprovedPayment() {
 
-        Order order = Order.builder()
-                .id(1L)
-                .userId(10L)
-                .total(BigDecimal.valueOf(100))
-                .build();
+        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.valueOf(100));
 
         PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), "PIX");
 
-        when(orderRepository.findById(1L))
-                .thenReturn(Optional.of(order));
+        when(orderLookup.findSummary(1L)).thenReturn(order);
 
         when(paymentRepository.existsByOrderIdAndStatus(1L, PaymentStatus.APPROVED))
                 .thenReturn(true);
@@ -149,16 +132,11 @@ class ProcessPaymentServiceTest {
     @Test
     void shouldThrowAccessDeniedWhenUserIsNotOwnerNorAdmin() {
 
-        Order order = Order.builder()
-                .id(1L)
-                .userId(10L)
-                .total(BigDecimal.valueOf(100))
-                .build();
+        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.valueOf(100));
 
         PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), "PIX");
 
-        when(orderRepository.findById(1L))
-                .thenReturn(Optional.of(order));
+        when(orderLookup.findSummary(1L)).thenReturn(order);
 
         assertThrows(
                 AccessDeniedException.class,
@@ -175,16 +153,11 @@ class ProcessPaymentServiceTest {
     @Test
     void shouldAllowAdminToPayForAnyOrder() {
 
-        Order order = Order.builder()
-                .id(1L)
-                .userId(10L)
-                .total(BigDecimal.valueOf(100))
-                .build();
+        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.valueOf(100));
 
         PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), "PIX");
 
-        when(orderRepository.findById(1L))
-                .thenReturn(Optional.of(order));
+        when(orderLookup.findSummary(1L)).thenReturn(order);
 
         when(paymentRepository.save(any(Payment.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));

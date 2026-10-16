@@ -1,6 +1,6 @@
 package com.ericksoares.tattoo.shared.security;
 
-import com.ericksoares.tattoo.user.domain.entity.User;
+import com.ericksoares.tattoo.shared.security.model.AuthenticatedUser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -35,16 +35,16 @@ public class JwtService {
         );
     }
 
-    public String generateToken(User user) {
+    public String generateToken(AuthenticatedUser user) {
 
         return Jwts.builder()
-                .setSubject(user.getEmail())
+                .setSubject(user.getUsername())
 
                 .claim("userId", user.getId())
 
                 .claim(
                         "role",
-                        user.getUserType().name()
+                        user.getRole()
                 )
 
                 .setIssuedAt(new Date())

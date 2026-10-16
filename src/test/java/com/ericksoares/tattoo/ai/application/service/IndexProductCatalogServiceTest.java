@@ -1,7 +1,7 @@
 package com.ericksoares.tattoo.ai.application.service;
 
-import com.ericksoares.tattoo.product.domain.entity.Product;
-import com.ericksoares.tattoo.product.infrastructure.repository.ProductRepository;
+import com.ericksoares.tattoo.product.application.dto.response.ProductSnapshot;
+import com.ericksoares.tattoo.product.application.service.ProductCatalog;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
 class IndexProductCatalogServiceTest {
 
     @Mock
-    private ProductRepository productRepository;
+    private ProductCatalog productCatalog;
 
     @Mock
     private VectorStore vectorStore;
@@ -31,17 +31,17 @@ class IndexProductCatalogServiceTest {
     @Test
     void shouldIndexAllProductsAsDocuments() {
 
-        Product product = Product.builder()
-                .name("Tattoo Ink - Black")
-                .description("Professional black tattoo ink")
-                .price(BigDecimal.valueOf(45.90))
-                .stock(98)
-                .build();
-        product.setId(7L);
+        ProductSnapshot product = new ProductSnapshot(
+                7L,
+                "Tattoo Ink - Black",
+                "Professional black tattoo ink",
+                BigDecimal.valueOf(45.90),
+                98
+        );
 
-        when(productRepository.findAll()).thenReturn(List.of(product));
+        when(productCatalog.findAll()).thenReturn(List.of(product));
 
-        IndexProductCatalogService service = new IndexProductCatalogService(productRepository, vectorStore);
+        IndexProductCatalogService service = new IndexProductCatalogService(productCatalog, vectorStore);
 
         int indexed = service.indexAll();
 

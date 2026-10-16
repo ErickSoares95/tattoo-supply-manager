@@ -3,7 +3,7 @@ package com.ericksoares.tattoo.ai.event;
 import com.ericksoares.tattoo.ai.application.service.IndexProductCatalogService;
 import com.ericksoares.tattoo.product.domain.event.ProductRegisteredEvent;
 import com.ericksoares.tattoo.product.domain.event.ProductUpdatedEvent;
-import com.ericksoares.tattoo.product.infrastructure.repository.ProductRepository;
+import com.ericksoares.tattoo.product.application.service.ProductCatalog;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -21,14 +21,14 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Component
 public class ProductIndexListener {
 
-    private final ProductRepository productRepository;
+    private final ProductCatalog productCatalog;
     private final IndexProductCatalogService indexProductCatalogService;
 
     public ProductIndexListener(
-            ProductRepository productRepository,
+            ProductCatalog productCatalog,
             IndexProductCatalogService indexProductCatalogService
     ) {
-        this.productRepository = productRepository;
+        this.productCatalog = productCatalog;
         this.indexProductCatalogService = indexProductCatalogService;
     }
 
@@ -46,7 +46,7 @@ public class ProductIndexListener {
 
     private void reindex(Long productId) {
 
-        productRepository.findById(productId).ifPresent(product -> {
+        productCatalog.findById(productId).ifPresent(product -> {
 
             indexProductCatalogService.indexOne(product);
 

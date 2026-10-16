@@ -1,8 +1,7 @@
 package com.ericksoares.tattoo.payment.application.service;
 
-import com.ericksoares.tattoo.order.domain.entity.Order;
-import com.ericksoares.tattoo.order.domain.exception.OrderNotFoundException;
-import com.ericksoares.tattoo.order.infrasctruture.repository.OrderRepository;
+import com.ericksoares.tattoo.order.application.dto.OrderSummary;
+import com.ericksoares.tattoo.order.application.service.OrderLookup;
 import com.ericksoares.tattoo.payment.application.dto.PaymentRequest;
 import com.ericksoares.tattoo.payment.application.dto.PaymentResponse;
 import com.ericksoares.tattoo.payment.application.mapper.PaymentMapper;
@@ -24,16 +23,16 @@ import java.util.UUID;
 @Service
 public class ProcessPaymentService {
 
-    private final OrderRepository orderRepository;
+    private final OrderLookup orderLookup;
     private final PaymentRepository paymentRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     public ProcessPaymentService(
-            OrderRepository orderRepository,
+            OrderLookup orderLookup,
             PaymentRepository paymentRepository,
             ApplicationEventPublisher eventPublisher
     ) {
-        this.orderRepository = orderRepository;
+        this.orderLookup = orderLookup;
         this.paymentRepository = paymentRepository;
         this.eventPublisher = eventPublisher;
     }
@@ -41,10 +40,9 @@ public class ProcessPaymentService {
     @Transactional
     public PaymentResponse execute(Long orderId, PaymentRequest request, Long userId, boolean isAdmin) {
 
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        OrderSummary order = orderLookup.findSummary(orderId);
 
-        if (!isAdmin && !order.getUserId().equals(userId)) {
+        if (!isAdmin && !order.userId().equals(userId)) {
             throw new AccessDeniedException("You do not have permission to pay for this order");
         }
 
@@ -59,7 +57,7 @@ public class ProcessPaymentService {
                 .status(PaymentStatus.PENDING)
                 .build();
 
-        payment.decide(order.getTotal());
+        payment.decide(order.total());
 
         Payment saved = paymentRepository.save(payment);
 

@@ -99,7 +99,7 @@ public class UserController {
     ) {
 
         return ResponseEntity.ok(
-                findUserByIdService.execute(authenticatedUser.getUser().getId())
+                findUserByIdService.execute(authenticatedUser.getId())
         );
     }
 
@@ -110,7 +110,7 @@ public class UserController {
     ) {
 
         return ResponseEntity.ok(
-                updateProfileService.execute(authenticatedUser.getUser().getId(), request)
+                updateProfileService.execute(authenticatedUser.getId(), request)
         );
     }
 
@@ -121,7 +121,7 @@ public class UserController {
     ) {
 
         changePasswordService.execute(
-                authenticatedUser.getUser().getId(),
+                authenticatedUser.getId(),
                 request
         );
 

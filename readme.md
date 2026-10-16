@@ -39,7 +39,7 @@ The main goal is to simulate real-world enterprise backend challenges such as de
 ### Current Approach
 - **Modular Monolith (Modulith):** Domain segregation ensuring clean boundaries.
 - **Clean Separation of Concerns:** Layered architecture designed around specific business use cases.
-- **Event-Driven Communication:** Loose coupling between internal modules via asynchronous events (`order` never calls `notification` directly).
+- **Event-Driven Side Effects, Explicit Module APIs:** cross-module side effects go through events (`order` never calls `notification` directly); queries and commands that need an immediate answer call the owning module's small public API (e.g. `ProductInventory`, `OrderLookup`), which returns records, never JPA entities. Boundaries are enforced by Spring Modulith in `ModularityTest`.
 
 ### Modules
 - **User** → Authentication (JWT, login by email *or* CPF), account management, and Role-Based Access Control (`ADMIN`, `CLIENT`, `ATTENDANT`).
@@ -86,7 +86,7 @@ The application exposes real-time telemetry, enabling proactive production monit
 The system architecture treats infrastructure and external failures as first-class citizens:
 
 **✅ Retry Mechanism**
-- Automatic, per-channel retries powered by Spring Retry — a failure in one notification channel (e.g. webhook) never causes a duplicate resend on a channel that already succeeded (e.g. email).
+- Automatic, per-channel retries persisted in the database (exponential backoff, replayed by a scheduled job) — a failure in one notification channel (e.g. webhook) never causes a duplicate resend on a channel that already succeeded (e.g. email).
 - Configurable backoff policy preventing cascade system exhaustion.
 
 **✅ Failure Persistence & Eventual Consistency**
@@ -129,7 +129,7 @@ Deployment manifests (`k8s/`) for the app + Postgres, validated against a real l
 - Spring Boot 3.3
 - Spring Security (JWT + RBAC)
 - Spring Data JPA / Hibernate
-- Spring Retry & Spring Async
+- Spring Async & Scheduling
 - Spring AI (Ollama chat client + `pgvector` VectorStore)
 - PostgreSQL (+ `pgvector` extension)
 - Ollama (local LLM runtime — `llama3.2:1b`, `nomic-embed-text`)
@@ -226,16 +226,16 @@ report/
 shared/
 ```
 
-Each business module follows the same internal layering (`domain`, `application`, `infrastructure`, `presentation`) and communicates with the others only through `shared` or domain events — never by calling another module's service directly.
+Each business module follows the same internal layering (`domain`, `application`, `infrastructure`, `presentation`) and talks to the others only through `shared`, domain events (side effects) or the owning module's public API (queries and synchronous commands) — never through another module's repositories or entities. `ModularityTest` (Spring Modulith `ApplicationModules.verify()`) fails the build on any violation or module cycle.
 
 ## 🎯 Purpose
 
 This project was built to demonstrate:
 
 - Strong backend fundamentals (JPA/Hibernate, transactions, Bean Validation, advanced SQL).
-- Real-world architectural decisions (modular monolith, event-driven internal communication — both in-process and over a real message broker).
+- Real-world architectural decisions (modular monolith, in-process events dispatched after commit, module boundaries verified by Spring Modulith).
 - Production-grade security practices (JWT, RBAC, ownership-based authorization).
-- Resilience and failure handling under real async/retry/DLQ conditions.
+- Resilience and failure handling under real async conditions (bounded executors, persisted retries with backoff, leases against double sends).
 - A test suite that actually runs end-to-end, not just unit tests in isolation.
 - Applied AI (RAG) grounded in the system's own data, not a chatbot bolted on the side.
 - A full client (Next.js storefront + admin panel) consuming the API in production, not just Swagger calls.

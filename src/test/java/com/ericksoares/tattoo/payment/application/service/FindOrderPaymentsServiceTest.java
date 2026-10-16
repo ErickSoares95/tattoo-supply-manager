@@ -1,8 +1,8 @@
 package com.ericksoares.tattoo.payment.application.service;
 
-import com.ericksoares.tattoo.order.domain.entity.Order;
+import com.ericksoares.tattoo.order.application.dto.OrderSummary;
 import com.ericksoares.tattoo.order.domain.exception.OrderNotFoundException;
-import com.ericksoares.tattoo.order.infrasctruture.repository.OrderRepository;
+import com.ericksoares.tattoo.order.application.service.OrderLookup;
 import com.ericksoares.tattoo.payment.application.dto.PaymentResponse;
 import com.ericksoares.tattoo.payment.domain.entity.Payment;
 import com.ericksoares.tattoo.payment.domain.entity.PaymentStatus;
@@ -16,7 +16,6 @@ import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -25,7 +24,7 @@ import static org.mockito.Mockito.*;
 class FindOrderPaymentsServiceTest {
 
     @Mock
-    private OrderRepository orderRepository;
+    private OrderLookup orderLookup;
 
     @Mock
     private PaymentRepository paymentRepository;
@@ -36,8 +35,8 @@ class FindOrderPaymentsServiceTest {
     @Test
     void shouldReturnPaymentsForOrderOwner() {
 
-        Order order = Order.builder().id(1L).userId(10L).total(BigDecimal.TEN).build();
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.TEN);
+        when(orderLookup.findSummary(1L)).thenReturn(order);
         when(paymentRepository.findByOrderIdOrderByCreationDateDesc(1L))
                 .thenReturn(List.of(Payment.builder()
                         .id(5L).orderId(1L).amount(BigDecimal.TEN).method("PIX")
@@ -51,15 +50,15 @@ class FindOrderPaymentsServiceTest {
 
     @Test
     void shouldThrowWhenOrderNotFound() {
-        when(orderRepository.findById(9L)).thenReturn(Optional.empty());
+        when(orderLookup.findSummary(9L)).thenThrow(new OrderNotFoundException(9L));
         assertThrows(OrderNotFoundException.class, () -> service.execute(9L, 10L, false));
     }
 
     @Test
     void shouldThrowAccessDeniedWhenNotOwnerNorAdmin() {
 
-        Order order = Order.builder().id(1L).userId(10L).total(BigDecimal.TEN).build();
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.TEN);
+        when(orderLookup.findSummary(1L)).thenReturn(order);
 
         assertThrows(AccessDeniedException.class, () -> service.execute(1L, 999L, false));
         verify(paymentRepository, never()).findByOrderIdOrderByCreationDateDesc(any());
@@ -68,8 +67,8 @@ class FindOrderPaymentsServiceTest {
     @Test
     void shouldAllowAdminToViewAnyOrderPayments() {
 
-        Order order = Order.builder().id(1L).userId(10L).total(BigDecimal.TEN).build();
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.TEN);
+        when(orderLookup.findSummary(1L)).thenReturn(order);
         when(paymentRepository.findByOrderIdOrderByCreationDateDesc(1L)).thenReturn(List.of());
 
         assertTrue(service.execute(1L, 999L, true).isEmpty());
