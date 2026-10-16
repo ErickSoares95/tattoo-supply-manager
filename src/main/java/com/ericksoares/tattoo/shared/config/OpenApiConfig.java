@@ -23,7 +23,7 @@ class OpenApiConfig {
                         .description("API modular para gerenciamento de estoque e pedidos de estúdios de tatuagem.")
                         .contact(new Contact()
                                 .name("Erick de Lira Soares")
-                                .email("seu-email@exemplo.com")))
+                                .url("https://github.com/ErickSoares95/tattoo-supply-manager")))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
                 .components(new Components()
                         .addSecuritySchemes(securitySchemeName,

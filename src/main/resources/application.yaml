@@ -11,7 +11,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    # SQL logging is noisy and slow in production; turn it on locally with JPA_SHOW_SQL=true.
+    show-sql: ${JPA_SHOW_SQL:false}
   ai:
     ollama:
       base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
