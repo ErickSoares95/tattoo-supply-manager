@@ -1,21 +1,21 @@
 package com.ericksoares.tattoo.shared.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import java.security.Key;
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
-import java.util.function.Function;
 
 @Service
 public class JwtService {
 
-    private final String secretKey;
+    private final SecretKey signKey;
 
     private final long expiration;
 
@@ -23,95 +23,50 @@ public class JwtService {
             @Value("${jwt.secret}") String secretKey,
             @Value("${jwt.expiration}") long expiration
     ) {
-        this.secretKey = secretKey;
+        // Explicit charset: the key bytes must not depend on the JVM's default encoding.
+        this.signKey = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
         this.expiration = expiration;
-    }
-
-    private Key getSignKey() {
-
-        return Keys.hmacShaKeyFor(
-                secretKey.getBytes()
-        );
     }
 
     public String generateToken(AuthenticatedUser user) {
 
+        Date now = new Date();
+
         return Jwts.builder()
-                .setSubject(user.getUsername())
-
+                .subject(user.getUsername())
                 .claim("userId", user.getId())
-
-                .claim(
-                        "role",
-                        user.getRole()
-                )
-
-                .setIssuedAt(new Date())
-
-                .setExpiration(
-                        new Date(
-                                System.currentTimeMillis() + expiration
-                        )
-                )
-
-                .signWith(
-                        getSignKey(),
-                        SignatureAlgorithm.HS256
-                )
-
+                .claim("role", user.getRole())
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + expiration))
+                .signWith(signKey, Jwts.SIG.HS256)
                 .compact();
     }
 
-    public String extractUsername(String token) {
+    /**
+     * Verifies the signature and the expiration and returns the claims. Throws
+     * {@link JwtException} for a malformed, forged or expired token.
+     */
+    public Claims parse(String token) {
 
-        return extractClaim(
-                token,
-                Claims::getSubject
-        );
+        return Jwts.parser()
+                .verifyWith(signKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
-    public boolean isTokenValid(
-            String token,
-            UserDetails userDetails
-    ) {
+    public String extractUsername(String token) {
+        return parse(token).getSubject();
+    }
 
-        String username = extractUsername(token);
+    /** Expiration is already enforced by {@link #parse}; this checks the user behind the token. */
+    public boolean isTokenValid(Claims claims, UserDetails userDetails) {
 
-        return username.equals(userDetails.getUsername())
-                && !isTokenExpired(token)
+        return claims.getSubject().equals(userDetails.getUsername())
                 && userDetails.isEnabled();
     }
 
-    private boolean isTokenExpired(String token) {
-
-        return extractExpiration(token)
-                .before(new Date());
-    }
-
-    private Date extractExpiration(String token) {
-
-        return extractClaim(
-                token,
-                Claims::getExpiration
-        );
-    }
-
-    public <T> T extractClaim(
-            String token,
-            Function<Claims, T> resolver
-    ) {
-
-        Claims claims = extractAllClaims(token);
-
-        return resolver.apply(claims);
-    }
-
-    private Claims extractAllClaims(String token) {
-
-        return Jwts.parserBuilder()
-                .setSigningKey(getSignKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+    public boolean isTokenValid(String token, UserDetails userDetails) {
+        return isTokenValid(parse(token), userDetails);
     }
 }

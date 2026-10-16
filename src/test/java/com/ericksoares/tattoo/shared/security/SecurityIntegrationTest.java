@@ -100,4 +100,17 @@ class SecurityIntegrationTest {
                         status().isNotFound()
                 );
     }
+
+    @Test
+    void shouldReturnUnauthorizedForMalformedToken() throws Exception {
+
+        // The filter ignores a bad token instead of letting the jjwt exception escape.
+        mockMvc.perform(
+                        delete("/products/1")
+                                .header("Authorization", "Bearer abc.def.ghi")
+                )
+                .andExpect(
+                        status().isUnauthorized()
+                );
+    }
 }

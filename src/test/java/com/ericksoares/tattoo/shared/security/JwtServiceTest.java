@@ -1,5 +1,7 @@
 package com.ericksoares.tattoo.shared.security;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,6 +62,32 @@ class JwtServiceTest {
                         user
                 )
         );
+    }
+
+    @Test
+    void shouldRejectExpiredToken() {
+
+        JwtService shortLived = new JwtService(
+                "test-secret-key-apenas-para-testes-unitarios-32chars+",
+                -1000
+        );
+
+        String token = shortLived.generateToken(user);
+
+        assertThrows(ExpiredJwtException.class, () -> jwtService.parse(token));
+    }
+
+    @Test
+    void shouldRejectTokenSignedWithAnotherKey() {
+
+        JwtService otherKey = new JwtService(
+                "another-secret-key-for-a-forged-token-32chars++",
+                1000 * 60
+        );
+
+        String forged = otherKey.generateToken(user);
+
+        assertThrows(JwtException.class, () -> jwtService.parse(forged));
     }
 
     @Test
