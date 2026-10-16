@@ -14,6 +14,7 @@ record CreateUserRequest(
 
         @Email
         @NotBlank
+        @Size(max = 50)
         String email,
 
         @NotBlank

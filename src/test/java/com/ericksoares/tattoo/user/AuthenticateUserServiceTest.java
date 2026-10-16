@@ -9,6 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
@@ -105,6 +106,20 @@ class AuthenticateUserServiceTest {
 
         assertThrows(
                 InvalidCredentialsException.class,
+                () -> service.execute(request)
+        );
+    }
+
+    @Test
+    void shouldThrowAccountBlockedWhenUserIsDisabled() {
+
+        LoginRequest request = new LoginRequest("blocked@email.com", "123456");
+
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenThrow(new DisabledException("User is disabled"));
+
+        assertThrows(
+                AccountBlockedException.class,
                 () -> service.execute(request)
         );
     }

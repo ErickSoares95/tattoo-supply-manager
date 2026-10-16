@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +39,13 @@ class AuthenticateUserService {
         } catch (BadCredentialsException ex) {
 
             throw new InvalidCredentialsException();
+
+        } catch (DisabledException ex) {
+
+            // DaoAuthenticationProvider checks the account status before the password, so this
+            // tells anyone who knows the login that the account exists and is blocked. Accepted
+            // trade-off: a blocked user gets a clear 403 instead of a misleading "wrong password".
+            throw new AccountBlockedException();
         }
 
         // CustomUserDetailsService already resolved login (email OR cpf) to this principal -

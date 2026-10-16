@@ -29,6 +29,7 @@ class UpdateUserService {
 
         String normalizedCpf = UserMapper.normalizeCpf(request.cpf());
 
+        validateUsername(request.username(), id);
         validateCpf(normalizedCpf, id);
 
         user.setUsername(request.username());
@@ -42,6 +43,12 @@ class UpdateUserService {
         repository.save(user);
 
         return UserMapper.toResponse(user);
+    }
+
+    private void validateUsername(String username, Long userId) {
+        if (repository.existsByUsernameAndIdNot(username, userId)) {
+            throw new UsernameAlreadyExistsException(username);
+        }
     }
 
     private void validateCpf(String cpf, Long userId) {

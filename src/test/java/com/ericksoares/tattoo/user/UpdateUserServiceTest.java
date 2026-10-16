@@ -141,6 +141,39 @@ class UpdateUserServiceTest {
     }
 
     @Test
+    void shouldThrowWhenUsernameAlreadyBelongsToAnotherUser() {
+
+        User user = User.builder()
+                .id(1L)
+                .username("olduser")
+                .build();
+
+        UpdateUserRequest request =
+                new UpdateUserRequest(
+                        "taken",
+                        "Erick Soares",
+                        null,
+                        null,
+                        null,
+                        UserType.CLIENT,
+                        UserStatus.ACTIVE
+                );
+
+        when(repository.findById(1L))
+                .thenReturn(Optional.of(user));
+
+        when(repository.existsByUsernameAndIdNot("taken", 1L))
+                .thenReturn(true);
+
+        assertThrows(
+                UsernameAlreadyExistsException.class,
+                () -> service.execute(1L, request)
+        );
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
     void shouldThrowWhenCpfAlreadyBelongsToAnotherUser() {
 
         User user = User.builder()
