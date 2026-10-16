@@ -9,6 +9,11 @@ import org.springframework.stereotype.Service;
 public class WebhookNotificationSender implements NotificationSender {
 
     @Override
+    public String name() {
+        return "WEBHOOK";
+    }
+
+    @Override
     public void sendOrderRegistered(Long orderId) {
         log.info("Sending webhook for order {}", orderId);
     }

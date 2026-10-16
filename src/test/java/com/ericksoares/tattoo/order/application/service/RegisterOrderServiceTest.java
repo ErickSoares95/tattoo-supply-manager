@@ -3,180 +3,87 @@ package com.ericksoares.tattoo.order.application.service;
 import com.ericksoares.tattoo.order.application.dto.OrderItemRequest;
 import com.ericksoares.tattoo.order.application.dto.OrderRequest;
 import com.ericksoares.tattoo.order.application.dto.OrderResponse;
-import com.ericksoares.tattoo.order.domain.entity.Order;
-import com.ericksoares.tattoo.order.domain.exception.InvalidOrderItemQuantityException;
-import com.ericksoares.tattoo.order.infrasctruture.repository.OrderRepository;
 import com.ericksoares.tattoo.product.domain.entity.Product;
-import com.ericksoares.tattoo.product.domain.exception.ProductNotFoundException;
-import com.ericksoares.tattoo.product.infrastructure.repository.ProductRepository;
+import com.ericksoares.tattoo.product.domain.exception.InsufficientStockException;
+import com.ericksoares.tattoo.product.domain.exception.StockConflictException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.http.HttpStatus;
 
-import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Retry behaviour of the order entry point. The order logic itself (stock, validation, events)
+ * is covered by {@link RegisterOrderTransactionTest}.
+ */
 @ExtendWith(MockitoExtension.class)
 class RegisterOrderServiceTest {
 
     @Mock
-    private ProductRepository productRepository;
-
-    @Mock
-    private OrderRepository orderRepository;
-
-    @Mock
-    private ApplicationEventPublisher publisher;
+    private RegisterOrderTransaction transaction;
 
     @InjectMocks
     private RegisterOrderService service;
 
-    @Test
-    void shouldRegisterOrderSuccessfully() {
+    private final OrderRequest request = new OrderRequest(List.of(new OrderItemRequest(1L, 1)));
 
-        Product product = Product.builder()
-                .id(1L)
-                .name("Fonte Dragon")
-                .price(BigDecimal.valueOf(100))
-                .stock(10)
-                .build();
-
-        OrderRequest request = new OrderRequest(
-                List.of(
-                        new OrderItemRequest(
-                                1L,
-                                2
-                        )
-                )
-        );
-
-        when(productRepository.findById(1L))
-                .thenReturn(Optional.of(product));
-
-        when(orderRepository.save(any(Order.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        OrderResponse order = service.execute(request, 1L);
-
-        assertNotNull(order);
-
-        assertEquals(1L, order.userId());
-
-        assertEquals("Fonte Dragon", order.items().get(0).productName());
-
-        verify(productRepository)
-                .findById(1L);
-
-        verify(orderRepository)
-                .save(any(Order.class));
-
-        verify(publisher)
-                .publishEvent(any(Object.class));
+    private ObjectOptimisticLockingFailureException conflict() {
+        return new ObjectOptimisticLockingFailureException(Product.class, 1L);
     }
 
     @Test
-    void shouldThrowExceptionWhenProductNotFound() {
+    void shouldReturnResultWithoutRetryWhenFirstAttemptSucceeds() {
 
-        OrderRequest request = new OrderRequest(
-                List.of(
-                        new OrderItemRequest(
-                                999L,
-                                1
-                        )
-                )
-        );
+        OrderResponse response = mock(OrderResponse.class);
+        when(transaction.execute(request, 1L)).thenReturn(response);
 
-        when(productRepository.findById(999L))
-                .thenReturn(Optional.empty());
+        assertSame(response, service.execute(request, 1L));
 
-        assertThrows(
-                ProductNotFoundException.class,
+        verify(transaction, times(1)).execute(request, 1L);
+    }
+
+    @Test
+    void shouldRetryTheWholeTransactionOnOptimisticLockFailure() {
+
+        OrderResponse response = mock(OrderResponse.class);
+        when(transaction.execute(request, 1L))
+                .thenThrow(conflict())
+                .thenThrow(conflict())
+                .thenReturn(response);
+
+        assertSame(response, service.execute(request, 1L));
+
+        verify(transaction, times(3)).execute(request, 1L);
+    }
+
+    @Test
+    void shouldMapToConflictWhenRetriesAreExhausted() {
+
+        when(transaction.execute(request, 1L)).thenThrow(conflict());
+
+        StockConflictException ex = assertThrows(
+                StockConflictException.class,
                 () -> service.execute(request, 1L)
         );
 
-        verify(orderRepository, never())
-                .save(any());
-
-        verify(publisher, never())
-                .publishEvent(any());
+        assertEquals(HttpStatus.CONFLICT, ex.getStatus());
+        verify(transaction, times(RegisterOrderService.MAX_ATTEMPTS)).execute(request, 1L);
     }
 
     @Test
-    void shouldDecreaseProductStock() {
+    void shouldNotRetryBusinessErrors() {
 
-        Product product = Product.builder()
-                .id(1L)
-                .name("Máquina Pen")
-                .price(BigDecimal.valueOf(150))
-                .stock(10)
-                .build();
+        when(transaction.execute(request, 1L)).thenThrow(new InsufficientStockException("Tinta Black"));
 
-        OrderRequest request = new OrderRequest(
-                List.of(
-                        new OrderItemRequest(
-                                1L,
-                                3
-                        )
-                )
-        );
+        assertThrows(InsufficientStockException.class, () -> service.execute(request, 1L));
 
-        when(productRepository.findById(1L))
-                .thenReturn(Optional.of(product));
-
-        when(orderRepository.save(any(Order.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        service.execute(request, 1L);
-
-        assertEquals(
-                7,
-                product.getStock()
-        );
-    }
-
-    @Test
-    void shouldThrowAndNotDecreaseStockWhenQuantityIsInvalid() {
-
-        Product product = Product.builder()
-                .id(1L)
-                .name("Tinta Black")
-                .price(BigDecimal.valueOf(50))
-                .stock(10)
-                .build();
-
-        OrderRequest request = new OrderRequest(
-                List.of(
-                        new OrderItemRequest(
-                                1L,
-                                0
-                        )
-                )
-        );
-
-        when(productRepository.findById(1L))
-                .thenReturn(Optional.of(product));
-
-        assertThrows(
-                InvalidOrderItemQuantityException.class,
-                () -> service.execute(request, 1L)
-        );
-
-        assertEquals(
-                10,
-                product.getStock()
-        );
-
-        verify(orderRepository, never())
-                .save(any());
-
-        verify(publisher, never())
-                .publishEvent(any());
+        verify(transaction, times(1)).execute(request, 1L);
     }
 }

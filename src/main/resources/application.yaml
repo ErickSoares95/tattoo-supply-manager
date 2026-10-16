@@ -81,3 +81,8 @@ management:
         request:
           autotime:
             enabled: true
+# Scheduled retry of failed order/payment notifications (notification.application.service.NotificationRetryJob)
+notification:
+  retry:
+    fixed-delay-ms: ${NOTIFICATION_RETRY_FIXED_DELAY_MS:30000}
+    initial-delay-ms: ${NOTIFICATION_RETRY_INITIAL_DELAY_MS:30000}

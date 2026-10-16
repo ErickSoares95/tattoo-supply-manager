@@ -1,89 +1,46 @@
 package com.ericksoares.tattoo.order.application.service;
 
-import com.ericksoares.tattoo.order.application.dto.OrderItemData;
 import com.ericksoares.tattoo.order.application.dto.OrderRequest;
 import com.ericksoares.tattoo.order.application.dto.OrderResponse;
-import com.ericksoares.tattoo.order.application.mapper.OrderMapper;
-import com.ericksoares.tattoo.order.domain.entity.Order;
-import com.ericksoares.tattoo.order.domain.entity.OrderItem;
-import com.ericksoares.tattoo.order.domain.event.OrderRegisteredEvent;
-import com.ericksoares.tattoo.order.infrasctruture.repository.OrderRepository;
-import com.ericksoares.tattoo.product.domain.entity.Product;
-import com.ericksoares.tattoo.product.domain.exception.ProductNotFoundException;
-import com.ericksoares.tattoo.product.infrastructure.repository.ProductRepository;
-import org.springframework.context.ApplicationEventPublisher;
+import com.ericksoares.tattoo.product.domain.exception.StockConflictException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
+/**
+ * Entry point for registering an order. Deliberately not {@code @Transactional}: stock is
+ * protected by an optimistic lock ({@code Product.version}), so when two orders race for the
+ * same product the loser fails at commit with an OptimisticLockingFailureException. Each retry
+ * calls {@link RegisterOrderTransaction}, which opens a new transaction and re-reads the
+ * current stock - so a retry either succeeds or fails cleanly with InsufficientStockException.
+ */
+@Slf4j
 @Service
 public class RegisterOrderService {
 
-    private final ProductRepository productRepository;
-    private final ApplicationEventPublisher publisher;
-    private final OrderRepository orderRepository;
+    static final int MAX_ATTEMPTS = 3;
 
-    public RegisterOrderService(
-                                ProductRepository productRepository,
-                                OrderRepository orderRepository,
-                                ApplicationEventPublisher publisher
-                                )
-    {
-        this.productRepository = productRepository;
-        this.orderRepository = orderRepository;
-        this.publisher = publisher;
+    private final RegisterOrderTransaction transaction;
+
+    public RegisterOrderService(RegisterOrderTransaction transaction) {
+        this.transaction = transaction;
     }
 
-    @Transactional
     public OrderResponse execute(OrderRequest request, Long userId) {
 
-        List<OrderItem> items = new ArrayList<>();
-        List<OrderItemData> eventItems = new ArrayList<>();
+        for (int attempt = 1; ; attempt++) {
+            try {
+                return transaction.execute(request, userId);
+            } catch (OptimisticLockingFailureException e) {
 
-        for (var reqItem : request.items()) {
+                if (attempt >= MAX_ATTEMPTS) {
+                    log.warn("Order for user {} gave up after {} optimistic-lock conflicts", userId, attempt);
+                    throw new StockConflictException();
+                }
 
-            Product product = productRepository.findById(reqItem.productId())
-                    .orElseThrow(() -> new ProductNotFoundException(reqItem.productId()));
-
-            OrderItem item = new OrderItem();
-            item.setProductId(product.getId());
-            item.setProductName(product.getName());
-            item.setQuantity(reqItem.quantity());
-            item.setPrice(product.getPrice());
-
-            item.validate();
-
-            product.decreaseStock(reqItem.quantity());
-
-            items.add(item);
-
-            eventItems.add(new OrderItemData(
-                    product.getId(),
-                    product.getName(),
-                    reqItem.quantity()
-            ));
+                log.info("Optimistic-lock conflict registering order for user {} (attempt {}/{}), retrying",
+                        userId, attempt, MAX_ATTEMPTS);
+            }
         }
-
-        Order order = new Order();
-        order.setItems(items);
-        order.setUserId(userId);
-
-        order.validate();
-        order.calculateTotal();
-
-        Order savedOrder = orderRepository.save(order);
-
-        publisher.publishEvent(
-                new OrderRegisteredEvent(
-                        savedOrder.getId(),
-                        eventItems,
-                        LocalDateTime.now()
-                )
-        );
-
-        return OrderMapper.toResponse(savedOrder);
     }
 }

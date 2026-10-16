@@ -8,6 +8,11 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class EmailNotificationSender implements NotificationSender {
     @Override
+    public String name() {
+        return "EMAIL";
+    }
+
+    @Override
     public void sendOrderRegistered(Long orderId) {
         log.info("Sending fake email for order {}", orderId);
     }

@@ -5,6 +5,7 @@ import com.ericksoares.tattoo.product.domain.exception.InsufficientStockExceptio
 import com.ericksoares.tattoo.product.domain.exception.InvalidProductNameException;
 import com.ericksoares.tattoo.product.domain.exception.InvalidProductPriceException;
 import com.ericksoares.tattoo.product.domain.exception.InvalidStockException;
+import com.ericksoares.tattoo.product.domain.exception.InvalidStockQuantityException;
 import com.ericksoares.tattoo.shared.domain.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -48,6 +49,14 @@ public class Product extends BaseEntity {
     @Column(length = 20)
     private ProductCategory category;
 
+    // Optimistic lock for concurrent stock changes (two orders reading the same stock):
+    // the second UPDATE sees a stale version and fails instead of overselling. Boxed Long and
+    // "default 0" so ddl-auto=update can add the column to a table that already has rows
+    // (existing products get version 0); see RegisterOrderService for the retry.
+    @Version
+    @Column(columnDefinition = "bigint default 0")
+    private Long version;
+
     public void validate() {
 
         if (name == null || name.isBlank()) {
@@ -64,6 +73,10 @@ public class Product extends BaseEntity {
     }
 
     public void decreaseStock(int quantity) {
+        if (quantity <= 0) {
+            throw new InvalidStockQuantityException();
+        }
+
         if (stock < quantity) {
             throw new InsufficientStockException(this.name);
         }

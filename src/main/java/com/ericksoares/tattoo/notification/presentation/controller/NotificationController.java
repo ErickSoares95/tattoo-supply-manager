@@ -1,6 +1,7 @@
 package com.ericksoares.tattoo.notification.presentation.controller;
 
 import com.ericksoares.tattoo.notification.application.service.NotificationReprocessService;
+import com.ericksoares.tattoo.notification.application.service.PaymentNotificationReprocessService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -14,15 +15,21 @@ import org.springframework.web.bind.annotation.RestController;
 public class NotificationController {
 
     private final NotificationReprocessService service;
+    private final PaymentNotificationReprocessService paymentService;
 
-    public NotificationController(NotificationReprocessService service) {
+    public NotificationController(
+            NotificationReprocessService service,
+            PaymentNotificationReprocessService paymentService
+    ) {
         this.service = service;
+        this.paymentService = paymentService;
     }
 
     @PostMapping("/reprocess")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> reprocess() {
         service.reprocessAll();
+        paymentService.reprocessAll();
         return ResponseEntity.ok().build();
     }
 }

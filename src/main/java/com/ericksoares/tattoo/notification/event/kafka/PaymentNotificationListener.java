@@ -1,8 +1,9 @@
 package com.ericksoares.tattoo.notification.event.kafka;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import com.ericksoares.tattoo.notification.application.dto.SenderFailure;
+import com.ericksoares.tattoo.notification.application.service.FailedPaymentNotificationRecorder;
 import com.ericksoares.tattoo.notification.application.service.NotificationService;
-import com.ericksoares.tattoo.notification.domain.entity.FailedPaymentNotification;
 import com.ericksoares.tattoo.notification.domain.entity.ProcessedPaymentEvent;
 import com.ericksoares.tattoo.notification.domain.repository.FailedPaymentNotificationRepository;
 import com.ericksoares.tattoo.notification.domain.repository.ProcessedPaymentEventRepository;
@@ -14,6 +15,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Kafka counterpart of {@code notification.event.NotificationListener}: same
@@ -29,17 +31,20 @@ import java.time.LocalDateTime;
 public class PaymentNotificationListener {
 
     private final NotificationService notificationService;
-    private final FailedPaymentNotificationRepository failedRepository;
+    private final FailedPaymentNotificationRecorder recorder;
     private final ProcessedPaymentEventRepository processedRepository;
+    private final FailedPaymentNotificationRepository failedRepository;
 
     public PaymentNotificationListener(
             NotificationService notificationService,
-            FailedPaymentNotificationRepository failedRepository,
-            ProcessedPaymentEventRepository processedRepository
+            FailedPaymentNotificationRecorder recorder,
+            ProcessedPaymentEventRepository processedRepository,
+            FailedPaymentNotificationRepository failedRepository
     ) {
         this.notificationService = notificationService;
-        this.failedRepository = failedRepository;
+        this.recorder = recorder;
         this.processedRepository = processedRepository;
+        this.failedRepository = failedRepository;
     }
 
     @KafkaListener(topics = PaymentTopics.PAYMENT_PROCESSED, groupId = "notification-service")
@@ -53,18 +58,16 @@ public class PaymentNotificationListener {
         log.info("Received PaymentProcessedEvent for order {} (status {})", event.orderId(), event.status());
         log.info("Processing in thread: {}", Thread.currentThread().getName());
 
-        boolean succeeded = switch (event.status()) {
+        List<SenderFailure> failures = switch (event.status()) {
             case APPROVED -> notificationService.notifyPaymentConfirmed(event.orderId());
             case REJECTED -> notificationService.notifyPaymentRejected(event.orderId());
             case PENDING -> {
                 log.warn("Received PaymentProcessedEvent with unexpected status PENDING for order {}", event.orderId());
-                yield true;
+                yield List.of();
             }
         };
 
-        if (!succeeded) {
-            persistFailure(event);
-        }
+        persistFailures(event, failures);
     }
 
     /**
@@ -86,19 +89,51 @@ public class PaymentNotificationListener {
         }
     }
 
-    private void persistFailure(PaymentProcessedEvent event) {
+    /**
+     * One row per failed sender, written by the recorder in its own transaction; the scheduled
+     * job (PaymentNotificationReprocessService) retries each one only through its sender.
+     */
+    private void persistFailures(PaymentProcessedEvent event, List<SenderFailure> failures) {
 
-        FailedPaymentNotification failure = new FailedPaymentNotification();
+        for (SenderFailure failure : failures) {
 
-        failure.setOrderId(event.orderId());
-        failure.setStatus(event.status().name());
-        failure.setAmount(event.amount());
-        failure.setErrorMessage("Failed to deliver payment notification to one or more senders");
-        failure.setCreatedAt(LocalDateTime.now());
-        failure.setProcessed(false);
+            // A previous delivery of this event already recorded this sender: do not duplicate the row.
+            if (failedRepository.existsByEventIdAndSenderName(event.eventId(), failure.senderName())) {
+                log.info("Failed payment notification for event {} (sender {}) already recorded, skipping",
+                        event.eventId(), failure.senderName());
+                continue;
+            }
 
-        failedRepository.save(failure);
+            try {
+                recorder.recordFailure(
+                        event.eventId(), event.orderId(), event.status().name(), event.amount(), failure);
 
-        log.warn("Failed payment notification persisted for order {}", event.orderId());
+                log.warn("Failed payment notification persisted for order {} (sender {})",
+                        event.orderId(), failure.senderName());
+            } catch (RuntimeException e) {
+                // The failure could not be saved, so nothing would ever retry this sender: give the claim
+                // back and let the Kafka error handler redeliver (or send to the DLT).
+                releaseClaim(event, e);
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Compensation for a lost failure record. If it fails too, the original exception still propagates
+     * (the compensation error is attached as suppressed) and the event is logged for manual recovery.
+     */
+    private void releaseClaim(PaymentProcessedEvent event, RuntimeException cause) {
+        try {
+            processedRepository.releaseClaim(event.eventId());
+
+            log.warn("Could not persist failed payment notification for order {} - claim of event {} released for redelivery",
+                    event.orderId(), event.eventId(), cause);
+        } catch (RuntimeException compensationError) {
+            cause.addSuppressed(compensationError);
+
+            log.error("Could not persist failed payment notification NOR release claim of event {} (order {}) - manual recovery needed",
+                    event.eventId(), event.orderId(), compensationError);
+        }
     }
 }

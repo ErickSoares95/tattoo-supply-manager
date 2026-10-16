@@ -14,11 +14,11 @@ VALUES
     ('ericklira99', 'ericklira99@gmail.com', '$2a$10$kCiyeNpjltj271oqveQ9COdUw1LVO3WiwpIN2kcPQlM4vH93hg57.', 'Erick Soares', 'ACTIVE', 'ADMIN', NULL, NULL, 'https://api.dicebear.com/9.x/fun-emoji/png?seed=tattoo-supply-manager&size=256&backgroundColor=b6e3f4,c0aede,ffd5dc', now(), now())
 ON CONFLICT (email) DO NOTHING;
 
-INSERT INTO products (name, price, stock, description, creation_date, last_update_date)
+INSERT INTO products (name, price, stock, description, version, creation_date, last_update_date)
 VALUES
-    ('Tattoo Ink - Black', 45.90, 100, 'Professional black tattoo ink, 30ml bottle', now(), now()),
-    ('Disposable Needles - Round Liner 5RL', 12.50, 200, 'Box of 50 sterile disposable round liner needles', now(), now()),
-    ('Tattoo Machine - Rotary Pro', 389.00, 15, 'Lightweight rotary tattoo machine, adjustable stroke', now(), now()),
-    ('Nitrile Gloves (Box of 100)', 22.00, 80, 'Powder-free nitrile gloves, size M', now(), now()),
-    ('Stencil Transfer Paper (A4, 100 sheets)', 34.90, 50, 'Thermal transfer paper for stencil application', now(), now())
+    ('Tattoo Ink - Black', 45.90, 100, 'Professional black tattoo ink, 30ml bottle', 0, now(), now()),
+    ('Disposable Needles - Round Liner 5RL', 12.50, 200, 'Box of 50 sterile disposable round liner needles', 0, now(), now()),
+    ('Tattoo Machine - Rotary Pro', 389.00, 15, 'Lightweight rotary tattoo machine, adjustable stroke', 0, now(), now()),
+    ('Nitrile Gloves (Box of 100)', 22.00, 80, 'Powder-free nitrile gloves, size M', 0, now(), now()),
+    ('Stencil Transfer Paper (A4, 100 sheets)', 34.90, 50, 'Thermal transfer paper for stencil application', 0, now(), now())
 ON CONFLICT DO NOTHING;

@@ -1,37 +1,42 @@
 package com.ericksoares.tattoo.notification.application.service;
 
 import com.ericksoares.tattoo.notification.application.listener.NotificationSender;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 
+/**
+ * Single delivery attempt per call. There is deliberately no in-thread retry/backoff here:
+ * sleeping between attempts would hold a notification-pool thread; a failed delivery is
+ * instead persisted by the caller and retried by the scheduled job with exponential backoff
+ * (see NotificationRetryJob / NotificationRetryPolicy).
+ *
+ * Failures leave here classified as TransientNotificationException (worth retrying) or
+ * PermanentNotificationException (parked for manual review) - see NotificationErrorClassifier.
+ * The classification lives here, not in each sender, so every channel gets it.
+ */
 @Component
 public class NotificationSenderExecutor {
 
-    @Retryable(
-            value = Exception.class,
-            maxAttempts = 3,
-            backoff = @Backoff(delay = 2000)
-    )
     public void send(NotificationSender sender, Long orderId) {
-        sender.sendOrderRegistered(orderId);
+        try {
+            sender.sendOrderRegistered(orderId);
+        } catch (Exception e) {
+            throw NotificationErrorClassifier.classify(e);
+        }
     }
 
-    @Retryable(
-            value = Exception.class,
-            maxAttempts = 3,
-            backoff = @Backoff(delay = 2000)
-    )
     public void sendPaymentConfirmed(NotificationSender sender, Long orderId) {
-        sender.sendPaymentConfirmed(orderId);
+        try {
+            sender.sendPaymentConfirmed(orderId);
+        } catch (Exception e) {
+            throw NotificationErrorClassifier.classify(e);
+        }
     }
 
-    @Retryable(
-            value = Exception.class,
-            maxAttempts = 3,
-            backoff = @Backoff(delay = 2000)
-    )
     public void sendPaymentRejected(NotificationSender sender, Long orderId) {
-        sender.sendPaymentRejected(orderId);
+        try {
+            sender.sendPaymentRejected(orderId);
+        } catch (Exception e) {
+            throw NotificationErrorClassifier.classify(e);
+        }
     }
 }

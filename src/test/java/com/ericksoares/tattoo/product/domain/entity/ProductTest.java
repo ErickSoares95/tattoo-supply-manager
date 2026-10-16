@@ -1,5 +1,7 @@
 package com.ericksoares.tattoo.product.domain.entity;
 
+import com.ericksoares.tattoo.product.domain.exception.InsufficientStockException;
+import com.ericksoares.tattoo.product.domain.exception.InvalidStockQuantityException;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -41,5 +43,46 @@ class ProductTest {
         Product product = productCreatedAt(null);
 
         assertFalse(product.isOnDailyDeal());
+    }
+
+    @Test
+    void shouldDecreaseStock() {
+
+        Product product = productCreatedAt(LocalDateTime.now());
+
+        product.decreaseStock(4);
+
+        assertEquals(6, product.getStock());
+    }
+
+    @Test
+    void shouldAllowDecreasingExactlyTheRemainingStock() {
+
+        Product product = productCreatedAt(LocalDateTime.now());
+
+        product.decreaseStock(10);
+
+        assertEquals(0, product.getStock());
+    }
+
+    @Test
+    void shouldRejectDecreaseBeyondStockAndKeepStock() {
+
+        Product product = productCreatedAt(LocalDateTime.now());
+
+        assertThrows(InsufficientStockException.class, () -> product.decreaseStock(11));
+
+        assertEquals(10, product.getStock());
+    }
+
+    @Test
+    void shouldRejectZeroOrNegativeQuantityAndKeepStock() {
+
+        Product product = productCreatedAt(LocalDateTime.now());
+
+        assertThrows(InvalidStockQuantityException.class, () -> product.decreaseStock(0));
+        assertThrows(InvalidStockQuantityException.class, () -> product.decreaseStock(-3));
+
+        assertEquals(10, product.getStock());
     }
 }

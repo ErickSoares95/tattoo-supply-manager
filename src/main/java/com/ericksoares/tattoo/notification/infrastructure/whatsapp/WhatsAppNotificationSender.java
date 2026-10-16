@@ -9,6 +9,11 @@ import org.springframework.stereotype.Service;
 public class WhatsAppNotificationSender implements NotificationSender {
 
     @Override
+    public String name() {
+        return "WHATSAPP";
+    }
+
+    @Override
     public void sendOrderRegistered(Long orderId) {
         log.info("Sending WhatsApp message for order {}", orderId);
     }
