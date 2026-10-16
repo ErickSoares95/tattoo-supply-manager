@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/orders")
-@CrossOrigin(origins = "*", maxAge = 3600)
 class OrderController {
 
     private final RegisterOrderService service;

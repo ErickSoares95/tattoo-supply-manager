@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/products")
-@CrossOrigin(origins = "*", maxAge = 3600)
 @RequiredArgsConstructor
 class ProductController {
 

@@ -13,7 +13,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/orders/{orderId}/payments")
-@CrossOrigin(origins = "*", maxAge = 3600)
 class PaymentController {
 
     private final ProcessPaymentService processService;
