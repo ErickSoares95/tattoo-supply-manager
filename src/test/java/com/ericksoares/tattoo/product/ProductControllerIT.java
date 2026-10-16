@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -180,6 +181,67 @@ class ProductControllerIT {
                 )
                 .andExpect(
                         status().isNoContent()
+                );
+    }
+
+    @Test
+    @WithMockUser(
+            username = "admin",
+            roles = {"ADMIN"}
+    )
+    void shouldValidateUpdateRequest() throws Exception {
+
+        Product product = productRepository.save(Product.builder()
+                .name("Tinta Azul")
+                .price(new BigDecimal("30.00"))
+                .stock(5)
+                .build());
+
+        // No category and a name longer than the column: rejected by Bean Validation (400)
+        // instead of saving a null category or failing in the database (500).
+        String request = """
+            {
+              "name":"%s",
+              "description":"Blue tattoo ink",
+              "price":30.00,
+              "stock":5
+            }
+            """.formatted("x".repeat(150));
+
+        mockMvc.perform(
+                        put("/products/" + product.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(request)
+                )
+                .andExpect(
+                        status().isBadRequest()
+                )
+                .andExpect(
+                        jsonPath("$.errors.name").exists()
+                )
+                .andExpect(
+                        jsonPath("$.errors.category").exists()
+                );
+    }
+
+    @Test
+    void shouldFilterByDescription() throws Exception {
+
+        productRepository.save(Product.builder()
+                .name("Filtro Teste")
+                .description("descricao-unica-para-o-filtro")
+                .price(new BigDecimal("10.00"))
+                .stock(1)
+                .build());
+
+        mockMvc.perform(
+                        get("/products").param("description", "descricao-unica-para-o-filtro")
+                )
+                .andExpect(
+                        status().isOk()
+                )
+                .andExpect(
+                        jsonPath("$.totalElements").value(1)
                 );
     }
 }
