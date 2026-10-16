@@ -4,10 +4,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -50,6 +53,32 @@ class GlobalExceptionHandlerIT {
         mockMvc.perform(get("/orders/abc"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Invalid value for parameter 'id'"));
+    }
+
+    @Test
+    void shouldReturnBadRequestForUnknownSortProperty() throws Exception {
+
+        mockMvc.perform(get("/products").param("sort", "doesNotExist"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Invalid sort property 'doesNotExist'"));
+    }
+
+    @Test
+    void shouldReturnConflictForDataIntegrityViolation() {
+
+        var response = new GlobalExceptionHandler().handleDataIntegrity(
+                new DataIntegrityViolationException("duplicate key value violates unique constraint"));
+
+        assertEquals(409, response.getStatusCode().value());
+    }
+
+    @Test
+    void shouldReturnConflictForOptimisticLockFailure() {
+
+        var response = new GlobalExceptionHandler().handleOptimisticLock(
+                new OptimisticLockingFailureException("stale version"));
+
+        assertEquals(409, response.getStatusCode().value());
     }
 
     @Test
