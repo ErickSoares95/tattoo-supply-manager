@@ -1,5 +1,6 @@
 package com.ericksoares.tattoo.ai;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -13,6 +14,7 @@ import java.util.stream.Collectors;
  * retrieves the most similar products from pgvector, grounds the LLM prompt
  * on that retrieved context, and asks the LlmClient to answer.
  */
+@Slf4j
 @Service
 class AskAssistantService {
 
@@ -28,12 +30,20 @@ class AskAssistantService {
 
     public AskResponse execute(String question) {
 
-        List<Document> results = vectorStore.similaritySearch(
-                SearchRequest.builder()
-                        .query(question)
-                        .topK(TOP_K)
-                        .build()
-        );
+        List<Document> results;
+
+        try {
+            // The search embeds the question through Ollama first.
+            results = vectorStore.similaritySearch(
+                    SearchRequest.builder()
+                            .query(question)
+                            .topK(TOP_K)
+                            .build()
+            );
+        } catch (RuntimeException e) {
+            log.warn("Vector search failed: {}", e.getMessage());
+            throw new AssistantUnavailableException();
+        }
 
         if (results.isEmpty()) {
             return new AskResponse(

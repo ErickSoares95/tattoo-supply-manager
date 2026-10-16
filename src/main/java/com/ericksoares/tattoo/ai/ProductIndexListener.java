@@ -1,5 +1,6 @@
 package com.ericksoares.tattoo.ai;
 
+import com.ericksoares.tattoo.product.ProductDeletedEvent;
 import com.ericksoares.tattoo.product.ProductRegisteredEvent;
 import com.ericksoares.tattoo.product.ProductUpdatedEvent;
 import com.ericksoares.tattoo.product.ProductCatalog;
@@ -41,6 +42,13 @@ class ProductIndexListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(ProductUpdatedEvent event) {
         reindex(event.productId());
+    }
+
+    @Async("aiExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handle(ProductDeletedEvent event) {
+        indexProductCatalogService.removeOne(event.productId());
+        log.info("Removed product {} from the vector store", event.productId());
     }
 
     private void reindex(Long productId) {

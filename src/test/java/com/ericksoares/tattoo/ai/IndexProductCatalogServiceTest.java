@@ -29,6 +29,17 @@ class IndexProductCatalogServiceTest {
     private VectorStore vectorStore;
 
     @Test
+    void shouldRemoveProductByItsDeterministicId() {
+
+        IndexProductCatalogService service = new IndexProductCatalogService(productCatalog, vectorStore);
+
+        service.removeOne(7L);
+
+        String expectedId = UUID.nameUUIDFromBytes("product-7".getBytes(StandardCharsets.UTF_8)).toString();
+        verify(vectorStore).delete(List.of(expectedId));
+    }
+
+    @Test
     void shouldIndexAllProductsAsDocuments() {
 
         ProductSnapshot product = new ProductSnapshot(

@@ -2,6 +2,7 @@ package com.ericksoares.tattoo.ai;
 
 import com.ericksoares.tattoo.product.ProductSnapshot;
 import com.ericksoares.tattoo.product.ProductCatalog;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import java.util.UUID;
  * product. Re-indexing the same product id is an upsert (PgVectorStore does
  * ON CONFLICT (id) DO UPDATE), so this is safe to call repeatedly.
  */
+@Slf4j
 @Service
 class IndexProductCatalogService {
 
@@ -30,7 +32,13 @@ class IndexProductCatalogService {
 
         List<ProductSnapshot> products = productCatalog.findAll();
 
-        vectorStore.add(products.stream().map(this::toDocument).toList());
+        try {
+            vectorStore.add(products.stream().map(this::toDocument).toList());
+        } catch (RuntimeException e) {
+            // Adding documents computes their embeddings through Ollama.
+            log.warn("Could not index the catalog: {}", e.getMessage());
+            throw new AssistantUnavailableException();
+        }
 
         return products.size();
     }
@@ -38,6 +46,12 @@ class IndexProductCatalogService {
     public void indexOne(ProductSnapshot product) {
 
         vectorStore.add(List.of(toDocument(product)));
+    }
+
+    /** Drops a deleted product from the index (same deterministic id it was indexed with). */
+    public void removeOne(Long productId) {
+
+        vectorStore.delete(List.of(deterministicId(productId)));
     }
 
     private Document toDocument(ProductSnapshot product) {

@@ -11,8 +11,9 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
- * Reacts to every OrderRegisteredEvent to signal products that just crossed
- * below the low-stock threshold. The order/product modules have no idea this
+ * Reacts to every OrderRegisteredEvent to signal ordered products whose stock is at or
+ * below the low-stock threshold. It fires on every order while the stock stays low, not
+ * only when it first crosses the threshold. The order/product modules have no idea this
  * listener exists — same decoupling already used by
  * {@code notification.NotificationListener}.
  */

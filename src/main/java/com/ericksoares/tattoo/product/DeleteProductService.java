@@ -1,6 +1,7 @@
 package com.ericksoares.tattoo.product;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 class DeleteProductService {
 
     private final ProductRepository repository;
+    private final ApplicationEventPublisher publisher;
 
     public void execute(Long id) {
 
@@ -19,5 +21,9 @@ class DeleteProductService {
                 );
 
         repository.delete(product);
+
+        // Without it the ai module's vector index kept the deleted product and the assistant
+        // could still recommend it.
+        publisher.publishEvent(new ProductDeletedEvent(id));
     }
 }

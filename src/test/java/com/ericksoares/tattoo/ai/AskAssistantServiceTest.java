@@ -41,6 +41,20 @@ class AskAssistantServiceTest {
     }
 
     @Test
+    void shouldReportUnavailableWhenVectorSearchFails() {
+
+        when(vectorStore.similaritySearch(any(SearchRequest.class)))
+                .thenThrow(new RuntimeException("Connection refused"));
+
+        AskAssistantService service = new AskAssistantService(vectorStore, llmClient);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                AssistantUnavailableException.class,
+                () -> service.execute("Do you have black ink?")
+        );
+    }
+
+    @Test
     void shouldGroundPromptOnRetrievedContextAndReturnSources() {
 
         Document document = Document.builder()
