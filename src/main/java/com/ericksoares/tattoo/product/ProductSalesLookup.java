@@ -12,10 +12,9 @@ import java.util.Map;
 // report's product_sales_report VIEW.
 //
 // Deliberately separate from report.ProductSalesReport: that VIEW only
-// counts order_items backed by an APPROVED payment, which the storefront's checkout
-// doesn't create yet (no payment step wired in there). Counting every order item
-// regardless of payment status is what makes "mais vendido" actually reflect real
-// storefront activity today.
+// counts order_items backed by an APPROVED payment (the financial view). "Mais vendido"
+// counts every order item regardless of payment status, so unpaid or rejected orders
+// still move a product up the catalog - a popularity signal, not revenue.
 @Component
 @RequiredArgsConstructor
 class ProductSalesLookup {

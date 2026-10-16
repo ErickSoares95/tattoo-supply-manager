@@ -16,8 +16,8 @@ record ProductResponse(
         boolean onDeal,
         // Units sold across ALL orders, regardless of payment status - deliberately NOT
         // the same "sales" concept as report.ProductSalesReport (that view
-        // only counts order_items with an APPROVED payment, which the storefront's
-        // checkout doesn't create yet). This field powers "mais vendido" ordering for
+        // only counts order_items with an APPROVED payment; orders left unpaid or with a
+        // rejected payment still count here). This field powers "mais vendido" ordering for
         // the public catalog/home page; the financial report's stricter definition is
         // unchanged and stays admin-only.
         long unitsSold
