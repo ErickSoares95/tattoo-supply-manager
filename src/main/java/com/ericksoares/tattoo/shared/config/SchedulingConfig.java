@@ -5,10 +5,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Enables {@code @Scheduled} support. Currently drives
- * {@code notification.application.service.NotificationRetryJob}, which replays failed order
+ * {@code notification.NotificationRetryJob}, which replays failed order
  * and payment notifications whose backoff has elapsed.
  */
 @EnableScheduling
 @Configuration
-public class SchedulingConfig {
+class SchedulingConfig {
 }

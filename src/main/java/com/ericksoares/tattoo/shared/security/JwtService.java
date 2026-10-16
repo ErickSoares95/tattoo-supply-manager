@@ -1,6 +1,5 @@
 package com.ericksoares.tattoo.shared.security;
 
-import com.ericksoares.tattoo.shared.security.model.AuthenticatedUser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;

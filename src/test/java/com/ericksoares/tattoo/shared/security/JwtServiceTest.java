@@ -1,6 +1,5 @@
 package com.ericksoares.tattoo.shared.security;
 
-import com.ericksoares.tattoo.shared.security.model.AuthenticatedUser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

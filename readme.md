@@ -38,7 +38,7 @@ The main goal is to simulate real-world enterprise backend challenges such as de
 
 ### Current Approach
 - **Modular Monolith (Modulith):** Domain segregation ensuring clean boundaries.
-- **Clean Separation of Concerns:** Layered architecture designed around specific business use cases.
+- **Clean Separation of Concerns:** one service class per business use case, inside flat modules whose internals are package-private.
 - **Event-Driven Side Effects, Explicit Module APIs:** cross-module side effects go through events (`order` never calls `notification` directly); queries and commands that need an immediate answer call the owning module's small public API (e.g. `ProductInventory`, `OrderLookup`), which returns records, never JPA entities. Boundaries are enforced by Spring Modulith in `ModularityTest`.
 
 ### Modules
@@ -216,17 +216,19 @@ Full request/response contracts are available via Swagger UI once the app is run
 ## 📁 Project Structure (Simplified)
 
 ```
-user/
-product/
-order/
-payment/
-notification/
-ai/
-report/
-shared/
+com.ericksoares.tattoo
+├── user/           User, UserRepository, UserController, CreateUserService, ... (flat)
+├── product/        Product, ProductController, ProductInventory (API), ProductCatalog (API), ...
+├── order/          Order, OrderItem, OrderController, RegisterOrderService, OrderLookup (API), ...
+├── payment/        Payment, PaymentController, ProcessPaymentService, PaymentProcessedEvent, ...
+├── notification/   listeners, retry job, failure recorders, ...
+│   └── sender/     NotificationSender + Email/Webhook/WhatsApp implementations
+├── ai/             RAG assistant (AssistantController, AskAssistantService, OllamaLlmClient, ...)
+├── report/         ReportController, ProductSalesReport (@Subselect over the VIEW), ...
+└── shared/         OPEN module: config/, exception/, persistence/ (BaseEntity), security/
 ```
 
-Each business module follows the same internal layering (`domain`, `application`, `infrastructure`, `presentation`) and talks to the others only through `shared`, domain events (side effects) or the owning module's public API (queries and synchronous commands) — never through another module's repositories or entities. `ModularityTest` (Spring Modulith `ApplicationModules.verify()`) fails the build on any violation or module cycle.
+Each module is a single flat package — no `domain`/`application`/`infrastructure`/`presentation` layers. Subpackages are only used per concept when a module grows (today only `notification/sender`; `shared` groups its cross-cutting concerns the same way). Visibility is the boundary: types another module may use (public APIs such as `ProductInventory`, `ProductCatalog` and `OrderLookup`, their records, events, cross-module exceptions, `UserType`) are `public`; everything else — entities, repositories, controllers, services, mappers, DTOs, listeners — is package-private. Modules talk to each other only through `shared`, domain events (side effects) or the owning module's public API (queries and synchronous commands). `ModularityTest` (Spring Modulith `ApplicationModules.verify()`) fails the build on any violation or module cycle.
 
 ## 🎯 Purpose
 

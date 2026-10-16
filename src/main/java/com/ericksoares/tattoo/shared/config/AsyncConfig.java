@@ -11,7 +11,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 @Slf4j
 @Configuration
-public class AsyncConfig {
+class AsyncConfig {
 
     @Bean(name = "notificationExecutor")
     public Executor notificationExecutor() {
