@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -98,5 +99,26 @@ class ReportControllerIT {
                 .andExpect(jsonPath("$[?(@.productId == %d)].revenue".formatted(paidProduct.id())).value(91.80))
                 .andExpect(jsonPath("$[?(@.productId == %d)].revenueRank".formatted(paidProduct.id())).exists())
                 .andExpect(jsonPath("$[?(@.productId == %d)]".formatted(unpaidProduct.id())).doesNotExist());
+    }
+
+    @Test
+    void shouldKeepOneRowPerProductAfterRename() throws Exception {
+
+        AuthenticatedUser admin = createAdmin();
+
+        ProductSnapshot product = createProduct("Report Nome Atual", BigDecimal.valueOf(10.00), 50);
+
+        // order_items keeps the name at order time: the first order recorded the old name.
+        OrderSummary oldNameOrder = OrderTestFixtures.saveOrder(
+                context, 1L, product.id(), "Report Nome Antigo", 1, product.price());
+        PaymentTestFixtures.savePayment(
+                context, oldNameOrder.id(), oldNameOrder.total(), "PIX", PaymentStatus.APPROVED);
+        createPaidOrder(product, 2);
+
+        mockMvc.perform(get("/reports/product-sales").with(as(admin)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.productId == %d)]".formatted(product.id()), hasSize(1)))
+                .andExpect(jsonPath("$[?(@.productId == %d)].unitsSold".formatted(product.id())).value(3))
+                .andExpect(jsonPath("$[?(@.productId == %d)].productName".formatted(product.id())).value("Report Nome Atual"));
     }
 }

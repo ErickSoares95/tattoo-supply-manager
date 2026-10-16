@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
  * This has to run as an ApplicationRunner, not a pre-startup script, because the VIEW
  * references order_items/payments/products, which only exist after Hibernate's
  * ddl-auto has run - in a fresh database (e.g. CI), those tables don't exist until
- * the app itself boots. CREATE OR REPLACE VIEW is idempotent, so re-running this on
- * every boot is safe.
+ * the app itself boots. DROP VIEW IF EXISTS + CREATE VIEW is idempotent, so re-running
+ * this on every boot is safe.
  *
  * Revenue attribution: joins order_items to payments on order_id where status=APPROVED.
  * This relies on an invariant enforced by payment.ProcessPaymentService
@@ -24,11 +24,14 @@ import org.springframework.stereotype.Component;
 @Component
 class ProductSalesViewInitializer implements ApplicationRunner {
 
+    // Grouped by product_id only: order_items keeps a copy of the product name at order time,
+    // so grouping by that copy would split a renamed product into two rows with the same id
+    // (the entity's @Id). The current name wins; a deleted product keeps its last recorded one.
     private static final String CREATE_VIEW_SQL = """
-            CREATE OR REPLACE VIEW product_sales_report AS
+            CREATE VIEW product_sales_report AS
             SELECT
                 oi.product_id                                            AS product_id,
-                oi.product_name                                          AS product_name,
+                COALESCE(MAX(pr.name), MAX(oi.product_name))             AS product_name,
                 pr.stock                                                 AS current_stock,
                 SUM(oi.quantity)                                         AS units_sold,
                 SUM(oi.price * oi.quantity)                              AS revenue,
@@ -40,8 +43,12 @@ class ProductSalesViewInitializer implements ApplicationRunner {
             FROM order_items oi
             JOIN payments p ON p.order_id = oi.order_id AND p.status = 'APPROVED'
             LEFT JOIN products pr ON pr.id = oi.product_id
-            GROUP BY oi.product_id, oi.product_name, pr.stock
+            GROUP BY oi.product_id, pr.stock
             """;
+
+    // DROP + CREATE instead of CREATE OR REPLACE: Postgres refuses OR REPLACE when a column's
+    // type changes, and nothing depends on this view.
+    private static final String DROP_VIEW_SQL = "DROP VIEW IF EXISTS product_sales_report";
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -51,6 +58,7 @@ class ProductSalesViewInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
+        jdbcTemplate.execute(DROP_VIEW_SQL);
         jdbcTemplate.execute(CREATE_VIEW_SQL);
         log.info("product_sales_report view created/refreshed");
     }

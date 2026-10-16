@@ -9,10 +9,10 @@ interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
 
     @Query("""
             SELECT oi.productId AS productId,
-                   oi.productName AS productName,
+                   MAX(oi.productName) AS productName,
                    SUM(oi.quantity) AS totalSold
             FROM OrderItem oi
-            GROUP BY oi.productId, oi.productName
+            GROUP BY oi.productId
             ORDER BY SUM(oi.quantity) DESC
             """)
     List<ProductSalesProjection> findProductSalesSummary();
