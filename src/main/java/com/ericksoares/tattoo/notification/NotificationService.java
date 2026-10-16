@@ -73,7 +73,7 @@ class NotificationService {
             return Optional.empty();
         } catch (Exception e) {
             log.error(
-                    "FINAL FAILURE - sender: {}, orderId: {}",
+                    "Delivery failed (persisted for retry) - sender: {}, orderId: {}",
                     sender.name(),
                     context.orderId(),
                     e
@@ -144,7 +144,7 @@ class NotificationService {
             return Optional.empty();
         } catch (Exception e) {
             log.error(
-                    "FINAL FAILURE - sender: {}, orderId: {}, event: {}",
+                    "Delivery failed (persisted for retry) - sender: {}, orderId: {}, event: {}",
                     sender.name(),
                     orderId,
                     event,

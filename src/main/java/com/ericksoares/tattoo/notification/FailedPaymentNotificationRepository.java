@@ -13,8 +13,6 @@ import java.util.List;
 interface FailedPaymentNotificationRepository
         extends JpaRepository<FailedPaymentNotification, Long> {
 
-    List<FailedPaymentNotification> findByProcessedFalse();
-
     /**
      * Unprocessed failures that still have attempts left and are not leased by another
      * worker, oldest first, keyset-paginated by id (0 for the first page).
