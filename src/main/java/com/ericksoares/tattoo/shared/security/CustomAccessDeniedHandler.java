@@ -29,12 +29,9 @@ class CustomAccessDeniedHandler
                 MediaType.APPLICATION_JSON_VALUE
         );
 
+        // Same JSON shape as the GlobalExceptionHandler's ErrorResponse (status, message, errors).
         response.getWriter().write("""
-                {
-                    "status": 403,
-                    "error": "Forbidden",
-                    "message": "You do not have permission to access this resource"
-                }
+                {"status": 403, "message": "You do not have permission to access this resource", "errors": null}
                 """);
     }
 }
