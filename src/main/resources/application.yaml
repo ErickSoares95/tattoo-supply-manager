@@ -47,6 +47,14 @@ management:
     web:
       exposure:
         include: health,prometheus
+  endpoint:
+    health:
+      # /actuator/health/liveness and /readiness (k8s probes, I4). Readiness also checks the DB.
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db
   metrics:
     web:
       server:
@@ -58,6 +66,9 @@ notification:
   retry:
     fixed-delay-ms: ${NOTIFICATION_RETRY_FIXED_DELAY_MS:30000}
     initial-delay-ms: ${NOTIFICATION_RETRY_INITIAL_DELAY_MS:30000}
+  # Max time a real sender may take per call; must fit in the 2-min resend lease (checked at boot)
+  sender:
+    timeout: ${NOTIFICATION_SENDER_TIMEOUT:30s}
 # Unpaid orders are cancelled (stock given back) after this many hours (order.OrderExpirationJob)
 order:
   expiration:

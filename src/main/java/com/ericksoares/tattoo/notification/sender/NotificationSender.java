@@ -1,5 +1,11 @@
 package com.ericksoares.tattoo.notification.sender;
 
+/**
+ * One notification channel. Contract for real implementations (N13): every call must give up
+ * within {@code notification.sender.timeout} (default 30s; use it as the client's connect+read
+ * timeout) - a resend holds only a 2-minute lease on its row, see NotificationTimingValidator.
+ * Let failures propagate; NotificationErrorClassifier decides which ones are retried.
+ */
 public interface NotificationSender {
 
     /**

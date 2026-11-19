@@ -51,15 +51,18 @@ spec:
                 secretKeyRef:
                   name: db-credentials
                   key: POSTGRES_PASSWORD
+          # I4: separate probes. Readiness includes the database, so a DB outage takes the pod out
+          # of the Service without restarting it; liveness only checks the JVM is responsive, so a
+          # DB outage doesn't turn into a restart loop.
           readinessProbe:
             httpGet:
-              path: /actuator/health
+              path: /actuator/health/readiness
               port: 8080
             initialDelaySeconds: 20
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /actuator/health
+              path: /actuator/health/liveness
               port: 8080
             initialDelaySeconds: 40
             periodSeconds: 15

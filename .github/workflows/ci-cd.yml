@@ -10,21 +10,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: pgvector/pgvector:pg17
-        env:
-          POSTGRES_DB: tattoo-supply-manager-db
-          POSTGRES_USER: tattoo_user
-          POSTGRES_PASSWORD: tattoo_pass
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd="pg_isready -U tattoo_user -d tattoo-supply-manager-db"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=10
-
+    # Integration tests start their own Postgres with Testcontainers (Docker is on the runner).
     steps:
       - uses: actions/checkout@v4
 
