@@ -10,15 +10,12 @@ import org.springframework.transaction.annotation.Transactional;
 class FindProductByIdService {
 
     private final ProductRepository repository;
-    private final ProductSalesLookup salesLookup;
 
     public ProductResponse execute(Long id) {
 
         Product product = repository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
 
-        long unitsSold = salesLookup.unitsSoldFor(id, salesLookup.loadUnitsSoldByProductId());
-
-        return ProductMapper.toResponse(product, unitsSold);
+        return ProductMapper.toResponse(product);
     }
 }

@@ -17,10 +17,6 @@ class ProductMapper {
     // created or edited has nothing new to report), so this overload defaults it to 0
     // instead of forcing every caller to look it up.
     public static ProductResponse toResponse(Product product) {
-        return toResponse(product, 0L);
-    }
-
-    public static ProductResponse toResponse(Product product, long unitsSold) {
         return new ProductResponse(
                 product.getId(),
                 product.getName(),
@@ -30,7 +26,7 @@ class ProductMapper {
                 product.getImageUrl(),
                 product.getCategory(),
                 product.isOnDailyDeal(),
-                unitsSold,
+                product.getUnitsSold(),
                 product.getVersion()
         );
     }

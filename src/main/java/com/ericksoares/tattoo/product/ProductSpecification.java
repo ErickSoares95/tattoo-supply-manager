@@ -3,8 +3,16 @@ package com.ericksoares.tattoo.product;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 class ProductSpecification {
+
+    /** Products in the catalog for 3+ months (same rule as Product.isOnDailyDeal), in SQL. */
+    public static Specification<Product> onDailyDeal(Boolean onDeal) {
+        return (root, query, cb) -> Boolean.TRUE.equals(onDeal)
+                ? cb.lessThan(root.get("creationDate"), LocalDateTime.now().minusMonths(Product.DAILY_DEAL_MONTHS_IN_STOCK))
+                : null;
+    }
 
     public static Specification<Product> nameContains(String name) {
         return (root, query, cb) ->
