@@ -28,7 +28,12 @@ record UpdateProductRequest(
         String imageUrl,
 
         @NotNull(message = "Category is required")
-        ProductCategory category
+        ProductCategory category,
+
+        // The version the client loaded (ProductResponse.version). A full replacement of a
+        // stale copy would overwrite stock sold since then, so a mismatch is a 409.
+        @NotNull(message = "Version is required")
+        Long version
 
 ) {
 }

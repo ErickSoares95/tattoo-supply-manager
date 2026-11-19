@@ -33,6 +33,7 @@ class UpdateProductServiceTest {
                 .name("Old Product")
                 .price(BigDecimal.valueOf(50))
                 .stock(10)
+                .version(0L)
                 .build();
 
         UpdateProductRequest request =
@@ -42,7 +43,8 @@ class UpdateProductServiceTest {
                         BigDecimal.valueOf(100),
                         20,
                         null,
-                        ProductCategory.ACCESSORIES
+                        ProductCategory.ACCESSORIES,
+                        0L
                 );
 
         when(repository.findById(1L))
@@ -56,7 +58,7 @@ class UpdateProductServiceTest {
         assertEquals(20, product.getStock());
 
         // 🔥 Alterado para validar o salvamento sem travar na igualdade estrita do objeto
-        verify(repository).save(any(Product.class));
+        verify(repository).saveAndFlush(any(Product.class));
     }
 
     @Test
@@ -66,6 +68,7 @@ class UpdateProductServiceTest {
                 .name("Old Product")
                 .price(BigDecimal.valueOf(50))
                 .stock(10)
+                .version(0L)
                 .build();
 
         UpdateProductRequest request =
@@ -75,7 +78,8 @@ class UpdateProductServiceTest {
                         BigDecimal.ZERO,
                         20,
                         null,
-                        ProductCategory.ACCESSORIES
+                        ProductCategory.ACCESSORIES,
+                        0L
                 );
 
         when(repository.findById(1L))
@@ -86,7 +90,7 @@ class UpdateProductServiceTest {
                 () -> service.execute(1L, request)
         );
 
-        verify(repository, never()).save(any());
+        verify(repository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -102,12 +106,48 @@ class UpdateProductServiceTest {
                         BigDecimal.TEN,
                         10,
                         null,
-                        ProductCategory.ACCESSORIES
+                        ProductCategory.ACCESSORIES,
+                        0L
                 );
 
         assertThrows(
                 ProductNotFoundException.class,
                 () -> service.execute(1L, request)
         );
+    }
+
+    @Test
+    void shouldRefuseToOverwriteAProductChangedSinceItWasLoaded() {
+
+        // Loaded at version 0 by the admin form; an order has since sold stock (version 1).
+        Product product = Product.builder()
+                .name("Old Product")
+                .price(BigDecimal.valueOf(50))
+                .stock(8)
+                .version(1L)
+                .build();
+
+        UpdateProductRequest staleRequest =
+                new UpdateProductRequest(
+                        "Old Product",
+                        null,
+                        BigDecimal.valueOf(50),
+                        10,
+                        null,
+                        ProductCategory.ACCESSORIES,
+                        0L
+                );
+
+        when(repository.findById(1L))
+                .thenReturn(Optional.of(product));
+
+        assertThrows(
+                ProductModifiedException.class,
+                () -> service.execute(1L, staleRequest)
+        );
+
+        assertEquals(8, product.getStock());
+        verify(repository, never()).saveAndFlush(any());
+        verify(publisher, never()).publishEvent(any());
     }
 }

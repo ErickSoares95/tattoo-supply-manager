@@ -30,7 +30,8 @@ class ProductMapper {
                 product.getImageUrl(),
                 product.getCategory(),
                 product.isOnDailyDeal(),
-                unitsSold
+                unitsSold,
+                product.getVersion()
         );
     }
 }

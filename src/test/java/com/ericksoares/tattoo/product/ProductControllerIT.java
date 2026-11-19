@@ -221,6 +221,98 @@ class ProductControllerIT {
                 )
                 .andExpect(
                         jsonPath("$.errors.category").exists()
+                )
+                .andExpect(
+                        jsonPath("$.errors.version").exists()
+                );
+    }
+
+    @Test
+    @WithMockUser(
+            username = "admin",
+            roles = {"ADMIN"}
+    )
+    void shouldRefuseAnUpdateMadeOnAStaleVersion() throws Exception {
+
+        Product product = productRepository.saveAndFlush(Product.builder()
+                .name("Tinta Verde")
+                .price(new BigDecimal("30.00"))
+                .stock(10)
+                .build());
+        long loadedVersion = product.getVersion();
+
+        // An order sells 2 units while the admin form (loaded at loadedVersion) is open.
+        product.decreaseStock(2);
+        productRepository.saveAndFlush(product);
+
+        String staleForm = """
+            {
+              "name":"Tinta Verde",
+              "price":30.00,
+              "stock":10,
+              "category":"INKS",
+              "version":%d
+            }
+            """.formatted(loadedVersion);
+
+        mockMvc.perform(
+                        put("/products/" + product.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(staleForm)
+                )
+                .andExpect(
+                        status().isConflict()
+                );
+
+        mockMvc.perform(
+                        get("/products/" + product.getId())
+                )
+                .andExpect(
+                        jsonPath("$.stock").value(8)
+                )
+                .andExpect(
+                        jsonPath("$.version").value(loadedVersion + 1)
+                );
+    }
+
+    @Test
+    @WithMockUser(
+            username = "admin",
+            roles = {"ADMIN"}
+    )
+    void shouldUpdateWhenTheVersionIsCurrent() throws Exception {
+
+        Product product = productRepository.saveAndFlush(Product.builder()
+                .name("Tinta Roxa")
+                .price(new BigDecimal("30.00"))
+                .stock(10)
+                .build());
+        // Read now: in this @Transactional test the PUT updates this same managed instance.
+        long loadedVersion = product.getVersion();
+
+        String form = """
+            {
+              "name":"Tinta Roxa",
+              "price":35.00,
+              "stock":12,
+              "category":"INKS",
+              "version":%d
+            }
+            """.formatted(loadedVersion);
+
+        mockMvc.perform(
+                        put("/products/" + product.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(form)
+                )
+                .andExpect(
+                        status().isOk()
+                )
+                .andExpect(
+                        jsonPath("$.stock").value(12)
+                )
+                .andExpect(
+                        jsonPath("$.version").value(loadedVersion + 1)
                 );
     }
 
