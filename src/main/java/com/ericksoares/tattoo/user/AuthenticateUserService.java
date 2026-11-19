@@ -22,7 +22,11 @@ class AuthenticateUserService {
 
     private final UserRepository userRepository;
 
+    private final LoginAttemptGuard loginAttemptGuard;
+
     public LoginResponse execute(LoginRequest request) {
+
+        loginAttemptGuard.ensureNotLocked(request.login());
 
         Authentication authentication;
 
@@ -38,6 +42,7 @@ class AuthenticateUserService {
 
         } catch (BadCredentialsException ex) {
 
+            loginAttemptGuard.recordFailure(request.login());
             throw new InvalidCredentialsException();
 
         } catch (DisabledException ex) {
@@ -55,6 +60,8 @@ class AuthenticateUserService {
 
         User user = userRepository.findById(principal.getId())
                 .orElseThrow(InvalidCredentialsException::new);
+
+        loginAttemptGuard.recordSuccess(request.login());
 
         String token = jwtService.generateToken(principal);
 

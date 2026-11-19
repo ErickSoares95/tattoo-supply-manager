@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -30,6 +31,9 @@ class AuthenticateUserServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Spy
+    private LoginAttemptGuard loginAttemptGuard = new LoginAttemptGuard();
 
     @InjectMocks
     private AuthenticateUserService service;
@@ -122,5 +126,22 @@ class AuthenticateUserServiceTest {
                 AccountBlockedException.class,
                 () -> service.execute(request)
         );
+    }
+
+    @Test
+    void shouldLockTheLoginAfterRepeatedFailuresEvenWithTheRightPassword() {
+
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenThrow(new BadCredentialsException("bad"));
+
+        LoginRequest wrong = new LoginRequest("Admin@Email.com", "wrong");
+        for (int i = 0; i < LoginAttemptGuard.MAX_FAILURES; i++) {
+            assertThrows(InvalidCredentialsException.class, () -> service.execute(wrong));
+        }
+
+        // Same login in another case: the lock is per login, case-insensitive.
+        assertThrows(TooManyLoginAttemptsException.class,
+                () -> service.execute(new LoginRequest("admin@email.com", "123456")));
+        verify(authenticationManager, times(LoginAttemptGuard.MAX_FAILURES)).authenticate(any());
     }
 }

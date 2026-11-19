@@ -3,6 +3,7 @@ package com.ericksoares.tattoo.shared.security;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 
@@ -23,7 +24,16 @@ public class AuthenticatedUser implements UserDetails {
 
     private final boolean enabled;
 
+    // Null until the user changes the password; tokens issued before it are no longer valid.
+    private final Instant credentialsChangedAt;
+
     public AuthenticatedUser(Long id, String email, String password, String role, boolean enabled) {
+        this(id, email, password, role, enabled, null);
+    }
+
+    public AuthenticatedUser(Long id, String email, String password, String role, boolean enabled,
+                             Instant credentialsChangedAt) {
+        this.credentialsChangedAt = credentialsChangedAt;
         this.id = id;
         this.email = email;
         this.password = password;
@@ -33,6 +43,10 @@ public class AuthenticatedUser implements UserDetails {
 
     public Long getId() {
         return id;
+    }
+
+    public Instant getCredentialsChangedAt() {
+        return credentialsChangedAt;
     }
 
     public String getRole() {

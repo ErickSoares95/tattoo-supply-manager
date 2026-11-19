@@ -5,6 +5,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -23,6 +25,8 @@ class ChangePasswordService {
         }
 
         user.setPassword(passwordEncoder.encode(request.newPassword()));
+        // Logs out every session holding a token issued before now, this one included.
+        user.setPasswordChangedAt(Instant.now());
 
         repository.save(user);
     }
