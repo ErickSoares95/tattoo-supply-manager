@@ -20,7 +20,10 @@ USER app
 
 EXPOSE 8080
 
-# Size the heap from the container's memory limit instead of the host's (Render free tier: 512 MB).
-ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
+# Heap capped as a share of the container limit (Render free tier: 512 MB). Kept low on purpose:
+# the app already uses ~250 MB outside the heap (metaspace, JIT, threads - Spring, Hibernate,
+# Spring AI), so 75% (384 MB heap) got the deploy OOM-killed. 30% = ~150 MB, close to the JVM's
+# 25% default that ran fine, but explicit.
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=30 -XX:+ExitOnOutOfMemoryError"
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
