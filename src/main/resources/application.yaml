@@ -8,9 +8,15 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/tattoo-supply-manager-db}
     username: ${SPRING_DATASOURCE_USERNAME:tattoo_user}
     password: ${SPRING_DATASOURCE_PASSWORD:tattoo_pass}
+  # Flyway owns the schema (src/main/resources/db/migration); Hibernate only checks it matches the
+  # entities. Databases created before Flyway (ddl-auto=update era) are baselined at V1, so only
+  # V2+ run on them.
+  flyway:
+    baseline-on-migrate: true
+    baseline-version: 1
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     # SQL logging is noisy and slow in production; turn it on locally with JPA_SHOW_SQL=true.
     show-sql: ${JPA_SHOW_SQL:false}
   ai:

@@ -20,7 +20,9 @@ Demo accounts (seeded via `docker/seed-demo-data.sql`):
 
 > **What's live:** storefront, catalog, orders, the admin panel, payments and payment notifications (in-process, no message broker needed). The RAG assistant (`/assistant/**`) needs a running Ollama instance and is available on the local Docker stack only.
 
-> **Upgrading an existing database:** Kafka and the transactional outbox were removed (the app is a monolith; payment notifications now use an in-process event). Databases created by older versions keep two orphan tables, `outbox_events` and `processed_payment_events`, that nothing reads anymore. Dropping them is optional and manual: `DROP TABLE IF EXISTS outbox_events, processed_payment_events;`
+> **Upgrading an existing database:** the schema is managed by Flyway (`src/main/resources/db/migration`). A database created before Flyway is baselined at version 1 on the first boot and only gets the newer migrations; `V2` adds a unique index allowing at most one `APPROVED` payment per order, so it refuses to run if the database already holds duplicates — check first with `SELECT order_id, count(*) FROM payments WHERE status = 'APPROVED' GROUP BY order_id HAVING count(*) > 1;`.
+
+> Kafka and the transactional outbox were removed (the app is a monolith; payment notifications now use an in-process event). Databases created by older versions keep two orphan tables, `outbox_events` and `processed_payment_events`, that nothing reads anymore. Dropping them is optional and manual: `DROP TABLE IF EXISTS outbox_events, processed_payment_events;`
 
 The original React + Vite MVP is still up at [tattoo-supply-manager-frontend](https://github.com/ErickSoares95/tattoo-supply-manager-frontend) for reference, but the storefront above is the current, actively developed client.
 
@@ -109,7 +111,7 @@ A real Retrieval-Augmented Generation pipeline, running entirely on local infras
 
 ## 📈 Advanced SQL Reporting
 
-`GET /reports/product-sales` is backed by a real Postgres `VIEW` (`product_sales_report`), not another JPA aggregate query — joining `order_items`, `payments` (only `APPROVED`) and `products`, with **window functions** (`RANK() OVER`, `SUM() OVER()`) computing revenue rank and market-share percentage per product directly in SQL. The entity mapping it to (`@Subselect` + `@Immutable`) is read-only by design; the view itself is created/refreshed on every app boot via an `ApplicationRunner`, since it depends on tables Hibernate only creates at startup.
+`GET /reports/product-sales` is backed by a real Postgres `VIEW` (`product_sales_report`), not another JPA aggregate query — joining `order_items`, `payments` (only `APPROVED`) and `products`, with **window functions** (`RANK() OVER`, `SUM() OVER()`) computing revenue rank and market-share percentage per product directly in SQL. The entity mapping it to (`@Subselect` + `@Immutable`) is read-only by design; the view itself is a Flyway repeatable migration (`R__product_sales_report.sql`). Revenue never double-counts because a partial unique index (`payments(order_id) WHERE status = 'APPROVED'`) guarantees at most one approved payment per order, even under concurrent requests.
 
 ## ☸️ Kubernetes
 
@@ -129,6 +131,7 @@ Deployment manifests (`k8s/`) for the app + Postgres, validated against a real l
 - Spring Boot 3.3
 - Spring Security (JWT + RBAC)
 - Spring Data JPA / Hibernate
+- Flyway (schema migrations)
 - Spring Async & Scheduling
 - Spring AI (Ollama chat client + `pgvector` VectorStore)
 - PostgreSQL (+ `pgvector` extension)

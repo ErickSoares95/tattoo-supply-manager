@@ -3,7 +3,9 @@ package com.ericksoares.tattoo.payment;
 import com.ericksoares.tattoo.order.OrderSummary;
 import com.ericksoares.tattoo.order.OrderLookup;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +16,8 @@ import java.util.UUID;
 @Slf4j
 @Service
 class ProcessPaymentService {
+
+    static final String SINGLE_APPROVED_CONSTRAINT = "uk_payments_order_approved";
 
     private final OrderLookup orderLookup;
     private final PaymentRepository paymentRepository;
@@ -51,7 +55,7 @@ class ProcessPaymentService {
 
         payment.decide(order.total());
 
-        Payment saved = paymentRepository.save(payment);
+        Payment saved = saveGuardingSingleApproval(payment);
 
         log.info("Payment {} for order {} processed with status {}", saved.getId(), orderId, saved.getStatus());
 
@@ -69,5 +73,23 @@ class ProcessPaymentService {
         eventPublisher.publishEvent(event);
 
         return PaymentMapper.toResponse(saved);
+    }
+
+    /**
+     * The existsBy check above is only the fast path: two concurrent requests can both pass it.
+     * The partial unique index uk_payments_order_approved (migration V2) rejects the second
+     * APPROVED insert; flushing here surfaces that inside this method (instead of at commit) so
+     * it becomes the same 409 as the check, and the event below is never published.
+     */
+    private Payment saveGuardingSingleApproval(Payment payment) {
+        try {
+            return paymentRepository.saveAndFlush(payment);
+        } catch (DataIntegrityViolationException ex) {
+            if (ex.getCause() instanceof ConstraintViolationException violation
+                    && SINGLE_APPROVED_CONSTRAINT.equals(violation.getConstraintName())) {
+                throw new OrderAlreadyPaidException(payment.getOrderId());
+            }
+            throw ex;
+        }
     }
 }
