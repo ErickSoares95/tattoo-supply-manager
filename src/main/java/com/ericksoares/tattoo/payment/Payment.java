@@ -24,6 +24,8 @@ class Payment extends BaseEntity {
 
     private String method;
 
+    // At most one APPROVED payment per order: enforced by the partial unique index
+    // uk_payments_order_approved (migration V2), not only by ProcessPaymentService's check.
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;

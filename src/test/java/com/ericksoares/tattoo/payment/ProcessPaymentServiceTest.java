@@ -3,7 +3,9 @@ package com.ericksoares.tattoo.payment;
 import com.ericksoares.tattoo.order.OrderSummary;
 import com.ericksoares.tattoo.order.OrderNotFoundException;
 import com.ericksoares.tattoo.order.OrderLookup;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -12,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -41,7 +44,7 @@ class ProcessPaymentServiceTest {
 
         when(orderLookup.findSummary(1L)).thenReturn(order);
 
-        when(paymentRepository.save(any(Payment.class)))
+        when(paymentRepository.saveAndFlush(any(Payment.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         PaymentResponse response = service.execute(1L, request, 10L, false);
@@ -49,7 +52,7 @@ class ProcessPaymentServiceTest {
         assertEquals(PaymentStatus.APPROVED, response.status());
 
         verify(paymentRepository)
-                .save(any(Payment.class));
+                .saveAndFlush(any(Payment.class));
 
         verify(eventPublisher).publishEvent(
                 argThat((Object payload) -> payload instanceof PaymentProcessedEvent event
@@ -66,7 +69,7 @@ class ProcessPaymentServiceTest {
 
         when(orderLookup.findSummary(1L)).thenReturn(order);
 
-        when(paymentRepository.save(any(Payment.class)))
+        when(paymentRepository.saveAndFlush(any(Payment.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         PaymentResponse response = service.execute(1L, request, 10L, false);
@@ -92,7 +95,7 @@ class ProcessPaymentServiceTest {
         );
 
         verify(paymentRepository, never())
-                .save(any());
+                .saveAndFlush(any());
 
         verify(eventPublisher, never())
                 .publishEvent(any(Object.class));
@@ -116,10 +119,57 @@ class ProcessPaymentServiceTest {
         );
 
         verify(paymentRepository, never())
-                .save(any());
+                .saveAndFlush(any());
 
         verify(eventPublisher, never())
                 .publishEvent(any(Object.class));
+    }
+
+    @Test
+    void shouldThrowOrderAlreadyPaidWhenConcurrentApprovalHitsUniqueIndex() {
+
+        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.valueOf(100));
+
+        PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), "PIX");
+
+        when(orderLookup.findSummary(1L)).thenReturn(order);
+
+        when(paymentRepository.saveAndFlush(any(Payment.class)))
+                .thenThrow(constraintViolation(ProcessPaymentService.SINGLE_APPROVED_CONSTRAINT));
+
+        assertThrows(
+                OrderAlreadyPaidException.class,
+                () -> service.execute(1L, request, 10L, false)
+        );
+
+        verify(eventPublisher, never())
+                .publishEvent(any(Object.class));
+    }
+
+    @Test
+    void shouldRethrowOtherDataIntegrityViolations() {
+
+        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.valueOf(100));
+
+        PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), "PIX");
+
+        when(orderLookup.findSummary(1L)).thenReturn(order);
+
+        when(paymentRepository.saveAndFlush(any(Payment.class)))
+                .thenThrow(constraintViolation("payments_status_check"));
+
+        assertThrows(
+                DataIntegrityViolationException.class,
+                () -> service.execute(1L, request, 10L, false)
+        );
+
+        verify(eventPublisher, never())
+                .publishEvent(any(Object.class));
+    }
+
+    private static DataIntegrityViolationException constraintViolation(String constraintName) {
+        return new DataIntegrityViolationException("constraint violated",
+                new ConstraintViolationException("constraint violated", new SQLException(), constraintName));
     }
 
     @Test
@@ -137,7 +187,7 @@ class ProcessPaymentServiceTest {
         );
 
         verify(paymentRepository, never())
-                .save(any());
+                .saveAndFlush(any());
 
         verify(eventPublisher, never())
                 .publishEvent(any(Object.class));
@@ -152,7 +202,7 @@ class ProcessPaymentServiceTest {
 
         when(orderLookup.findSummary(1L)).thenReturn(order);
 
-        when(paymentRepository.save(any(Payment.class)))
+        when(paymentRepository.saveAndFlush(any(Payment.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         PaymentResponse response = service.execute(1L, request, 999L, true);

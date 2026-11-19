@@ -1,5 +1,5 @@
 -- Seed data for the live demo (Render free-tier Postgres).
--- Run this after the app has started at least once (so Hibernate has created the schema via ddl-auto=update).
+-- Run this after the app has started at least once (so Flyway has created the schema).
 -- Usage: psql "$DATABASE_URL" -f docker/seed-demo-data.sql
 --
 -- Demo credentials:

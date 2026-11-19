@@ -11,15 +11,12 @@ import org.hibernate.annotations.Synchronize;
 import java.math.BigDecimal;
 
 /**
- * Read-only projection backed by the "product_sales_report" Postgres VIEW (created/
- * refreshed on every boot by ProductSalesViewInitializer).
+ * Read-only projection backed by the "product_sales_report" Postgres VIEW (Flyway repeatable
+ * migration R__product_sales_report.sql).
  *
- * Uses @Subselect instead of @Table on purpose: with a plain @Table(name=...), Hibernate's
- * ddl-auto=update runs BEFORE any ApplicationRunner and would create a real TABLE named
- * "product_sales_report" (since it has no idea a VIEW is coming later) - then the
- * ApplicationRunner's "CREATE OR REPLACE VIEW" fails with "is not a view", because you can't
- * replace a table with a view. @Subselect tells Hibernate this entity has no table to manage
- * at all (its rows come from the given query), so ddl-auto never touches it. @Synchronize
+ * Uses @Subselect instead of @Table: Hibernate treats the entity as having no table of its own
+ * (its rows come from the given query), so ddl-auto=validate never looks for a table named
+ * "product_sales_report". @Synchronize
  * lists the underlying tables so Hibernate auto-flushes pending changes to them before this
  * entity is queried in the same session/transaction.
  */
