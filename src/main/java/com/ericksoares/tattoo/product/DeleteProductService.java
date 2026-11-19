@@ -20,7 +20,9 @@ class DeleteProductService {
                         new ProductNotFoundException(id)
                 );
 
-        repository.delete(product);
+        // P4: soft delete - the row stays for order history and the sales report.
+        product.markDeleted();
+        repository.save(product);
 
         // Without it the ai module's vector index kept the deleted product and the assistant
         // could still recommend it.

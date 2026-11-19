@@ -21,6 +21,12 @@ class DeleteUserService {
 
         lastAdminGuard.ensureNotRemovingLastAdmin(user, false);
 
+        // U7: deleting would leave orders pointing at a user that no longer exists (no FK
+        // between modules, by design). Blocking the account keeps the history and stops logins.
+        if (repository.hasOrders(id)) {
+            throw new UserHasOrdersException(id);
+        }
+
         repository.delete(user);
     }
 }

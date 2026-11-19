@@ -9,6 +9,7 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
@@ -34,7 +35,10 @@ class DeleteProductServiceTest {
 
         service.execute(1L);
 
-        verify(repository).delete(product);
+        // P4: soft delete - the row is kept, only marked.
+        verify(repository, never()).delete(any(Product.class));
+        verify(repository).save(product);
+        assertNotNull(product.getDeletedAt());
         verify(publisher).publishEvent(new ProductDeletedEvent(1L));
     }
 

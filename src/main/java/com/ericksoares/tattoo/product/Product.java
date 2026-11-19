@@ -4,12 +4,16 @@ import com.ericksoares.tattoo.shared.persistence.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "products")
+// P4: soft-deleted products are invisible to every JPA query (catalog, orders, admin, ai).
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @AllArgsConstructor
@@ -47,6 +51,14 @@ class Product extends BaseEntity {
     // the second UPDATE sees a stale version and fails instead of overselling. Boxed Long and
     // "default 0" so ddl-auto=update can add the column to a table that already has rows
     // (existing products get version 0); see RegisterOrderService for the retry.
+    // P7: units reserved by orders that weren't cancelled ("mais vendido" sort, a real column).
+    @Column(name = "units_sold", nullable = false)
+    private long unitsSold;
+
+    // P4: soft delete - set by DeleteProductService; @SQLRestriction hides the row everywhere.
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
     @Version
     @Column(columnDefinition = "bigint default 0")
     private Long version;
@@ -75,6 +87,7 @@ class Product extends BaseEntity {
             throw new InsufficientStockException(this.name);
         }
         this.stock -= quantity;
+        this.unitsSold += quantity;
     }
 
     /** Gives back units reserved by an order that was cancelled. */
@@ -83,9 +96,14 @@ class Product extends BaseEntity {
             throw new InvalidStockQuantityException();
         }
         this.stock += quantity;
+        this.unitsSold = Math.max(0, this.unitsSold - quantity);
     }
 
-    private static final int DAILY_DEAL_MONTHS_IN_STOCK = 3;
+    public void markDeleted() {
+        this.deletedAt = Instant.now();
+    }
+
+    static final int DAILY_DEAL_MONTHS_IN_STOCK = 3;
 
     // Business rule confirmed with the user (2026-09-05): a product enters "Ofertas do
     // dia" automatically once it's been sitting in the catalog/stock for 3+ months,

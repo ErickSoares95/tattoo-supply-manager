@@ -1,5 +1,7 @@
 package com.ericksoares.tattoo.ai;
 
+import com.ericksoares.tattoo.order.OrderCancelledEvent;
+import com.ericksoares.tattoo.order.OrderRegisteredEvent;
 import com.ericksoares.tattoo.product.ProductDeletedEvent;
 import com.ericksoares.tattoo.product.ProductRegisteredEvent;
 import com.ericksoares.tattoo.product.ProductUpdatedEvent;
@@ -49,6 +51,20 @@ class ProductIndexListener {
     public void handle(ProductDeletedEvent event) {
         indexProductCatalogService.removeOne(event.productId());
         log.info("Removed product {} from the vector store", event.productId());
+    }
+
+    // A7: orders and cancellations change stock without going through the admin, so without
+    // these the indexed "stock: N" went stale until the next manual reindex.
+    @Async("aiExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handle(OrderRegisteredEvent event) {
+        event.items().forEach(item -> reindex(item.productId()));
+    }
+
+    @Async("aiExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handle(OrderCancelledEvent event) {
+        event.items().forEach(item -> reindex(item.productId()));
     }
 
     private void reindex(Long productId) {

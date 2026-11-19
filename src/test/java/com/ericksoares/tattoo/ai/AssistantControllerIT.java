@@ -142,4 +142,16 @@ class AssistantControllerIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.indexed").value(5));
     }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    void shouldRejectAnOverlongQuestion() throws Exception {
+
+        mockMvc.perform(
+                        post("/assistant/ask")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"question\":\"" + "a".repeat(501) + "\"}")
+                )
+                .andExpect(status().isBadRequest());
+    }
 }

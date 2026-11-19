@@ -79,4 +79,21 @@ class DeleteUserServiceTest {
 
         verify(repository, never()).delete(any(User.class));
     }
+
+    @Test
+    void shouldRefuseToDeleteAUserWhoHasOrders() {
+
+        User user = User.builder()
+                .id(2L)
+                .userType(UserType.CLIENT)
+                .userStatus(UserStatus.ACTIVE)
+                .build();
+
+        when(repository.findById(2L)).thenReturn(Optional.of(user));
+        when(repository.hasOrders(2L)).thenReturn(true);
+
+        assertThrows(UserHasOrdersException.class, () -> service.execute(2L));
+
+        verify(repository, never()).delete(any(User.class));
+    }
 }
