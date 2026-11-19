@@ -59,7 +59,7 @@ class ProcessPaymentConcurrencyIT {
             futures.add(pool.submit(() -> {
                 startTogether.await(10, TimeUnit.SECONDS);
                 try {
-                    return service.execute(order.id(), new PaymentRequest(order.total(), "PIX"), USER_ID, false);
+                    return service.execute(order.id(), new PaymentRequest(order.total(), PaymentMethod.PIX), USER_ID, false);
                 } catch (Exception e) {
                     return e;
                 }

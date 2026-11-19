@@ -37,4 +37,18 @@ public class ProductInventory {
 
         return new ReservedProduct(product.getId(), product.getName(), product.getPrice());
     }
+
+    /**
+     * Gives back {@code quantity} units reserved by a cancelled order. A product that no longer
+     * exists is skipped: there is no stock left to give back to.
+     *
+     * @throws com.ericksoares.tattoo.product.InvalidStockQuantityException when quantity <= 0
+     */
+    @Transactional
+    public void release(Long productId, int quantity) {
+        productRepository.findById(productId).ifPresent(product -> {
+            product.increaseStock(quantity);
+            productRepository.save(product);
+        });
+    }
 }

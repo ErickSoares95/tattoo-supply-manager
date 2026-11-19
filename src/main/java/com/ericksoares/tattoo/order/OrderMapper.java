@@ -22,6 +22,7 @@ class OrderMapper {
                         .map(OrderMapper::toResponse)
                         .toList(),
                 order.getTotal(),
+                order.getStatus(),
                 order.getCreationDate()
         );
     }

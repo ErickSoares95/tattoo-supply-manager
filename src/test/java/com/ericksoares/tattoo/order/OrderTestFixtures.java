@@ -38,7 +38,7 @@ public final class OrderTestFixtures {
         order.calculateTotal();
 
         Order saved = context.getBean(OrderRepository.class).save(order);
-        return new OrderSummary(saved.getId(), saved.getUserId(), saved.getTotal());
+        return new OrderSummary(saved.getId(), saved.getUserId(), saved.getTotal(), saved.getStatus());
     }
 
     public static void deleteOrders(ApplicationContext context, Collection<Long> ids) {

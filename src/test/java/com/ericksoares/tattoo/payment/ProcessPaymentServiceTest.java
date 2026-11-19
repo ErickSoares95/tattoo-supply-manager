@@ -1,5 +1,8 @@
 package com.ericksoares.tattoo.payment;
 
+import com.ericksoares.tattoo.order.OrderNotPayableException;
+import com.ericksoares.tattoo.order.OrderPayments;
+import com.ericksoares.tattoo.order.OrderStatus;
 import com.ericksoares.tattoo.order.OrderSummary;
 import com.ericksoares.tattoo.order.OrderNotFoundException;
 import com.ericksoares.tattoo.order.OrderLookup;
@@ -27,6 +30,9 @@ class ProcessPaymentServiceTest {
     private OrderLookup orderLookup;
 
     @Mock
+    private OrderPayments orderPayments;
+
+    @Mock
     private PaymentRepository paymentRepository;
 
     @Mock
@@ -38,9 +44,9 @@ class ProcessPaymentServiceTest {
     @Test
     void shouldApprovePaymentWhenAmountMatchesOrderTotal() {
 
-        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.valueOf(100));
+        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.valueOf(100), OrderStatus.PENDING_PAYMENT);
 
-        PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), "PIX");
+        PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), PaymentMethod.PIX);
 
         when(orderLookup.findSummary(1L)).thenReturn(order);
 
@@ -63,9 +69,9 @@ class ProcessPaymentServiceTest {
     @Test
     void shouldRejectPaymentWhenAmountDivergesFromOrderTotal() {
 
-        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.valueOf(100));
+        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.valueOf(100), OrderStatus.PENDING_PAYMENT);
 
-        PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(50), "PIX");
+        PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(50), PaymentMethod.PIX);
 
         when(orderLookup.findSummary(1L)).thenReturn(order);
 
@@ -85,7 +91,7 @@ class ProcessPaymentServiceTest {
     @Test
     void shouldThrowExceptionWhenOrderNotFound() {
 
-        PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), "PIX");
+        PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), PaymentMethod.PIX);
 
         when(orderLookup.findSummary(999L)).thenThrow(new OrderNotFoundException(999L));
 
@@ -104,9 +110,9 @@ class ProcessPaymentServiceTest {
     @Test
     void shouldThrowExceptionWhenOrderAlreadyHasApprovedPayment() {
 
-        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.valueOf(100));
+        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.valueOf(100), OrderStatus.PENDING_PAYMENT);
 
-        PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), "PIX");
+        PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), PaymentMethod.PIX);
 
         when(orderLookup.findSummary(1L)).thenReturn(order);
 
@@ -128,9 +134,9 @@ class ProcessPaymentServiceTest {
     @Test
     void shouldThrowOrderAlreadyPaidWhenConcurrentApprovalHitsUniqueIndex() {
 
-        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.valueOf(100));
+        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.valueOf(100), OrderStatus.PENDING_PAYMENT);
 
-        PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), "PIX");
+        PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), PaymentMethod.PIX);
 
         when(orderLookup.findSummary(1L)).thenReturn(order);
 
@@ -149,9 +155,9 @@ class ProcessPaymentServiceTest {
     @Test
     void shouldRethrowOtherDataIntegrityViolations() {
 
-        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.valueOf(100));
+        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.valueOf(100), OrderStatus.PENDING_PAYMENT);
 
-        PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), "PIX");
+        PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), PaymentMethod.PIX);
 
         when(orderLookup.findSummary(1L)).thenReturn(order);
 
@@ -175,9 +181,9 @@ class ProcessPaymentServiceTest {
     @Test
     void shouldThrowAccessDeniedWhenUserIsNotOwnerNorAdmin() {
 
-        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.valueOf(100));
+        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.valueOf(100), OrderStatus.PENDING_PAYMENT);
 
-        PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), "PIX");
+        PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), PaymentMethod.PIX);
 
         when(orderLookup.findSummary(1L)).thenReturn(order);
 
@@ -196,9 +202,9 @@ class ProcessPaymentServiceTest {
     @Test
     void shouldAllowAdminToPayForAnyOrder() {
 
-        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.valueOf(100));
+        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.valueOf(100), OrderStatus.PENDING_PAYMENT);
 
-        PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), "PIX");
+        PaymentRequest request = new PaymentRequest(BigDecimal.valueOf(100), PaymentMethod.PIX);
 
         when(orderLookup.findSummary(1L)).thenReturn(order);
 
@@ -208,5 +214,39 @@ class ProcessPaymentServiceTest {
         PaymentResponse response = service.execute(1L, request, 999L, true);
 
         assertEquals(PaymentStatus.APPROVED, response.status());
+    }
+
+    @Test
+    void shouldMarkTheOrderPaidWhenThePaymentIsApproved() {
+
+        when(orderLookup.findSummary(1L)).thenReturn(new OrderSummary(1L, 10L, BigDecimal.valueOf(100), OrderStatus.PENDING_PAYMENT));
+        when(paymentRepository.saveAndFlush(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.execute(1L, new PaymentRequest(BigDecimal.valueOf(100), PaymentMethod.PIX), 10L, false);
+
+        verify(orderPayments).markPaid(1L);
+    }
+
+    @Test
+    void shouldNotMarkTheOrderPaidWhenThePaymentIsRejected() {
+
+        when(orderLookup.findSummary(1L)).thenReturn(new OrderSummary(1L, 10L, BigDecimal.valueOf(100), OrderStatus.PENDING_PAYMENT));
+        when(paymentRepository.saveAndFlush(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.execute(1L, new PaymentRequest(BigDecimal.valueOf(50), PaymentMethod.PIX), 10L, false);
+
+        verify(orderPayments, never()).markPaid(any());
+    }
+
+    @Test
+    void shouldRefuseToPayACancelledOrder() {
+
+        when(orderLookup.findSummary(1L)).thenReturn(new OrderSummary(1L, 10L, BigDecimal.valueOf(100), OrderStatus.CANCELLED));
+
+        assertThrows(OrderNotPayableException.class,
+                () -> service.execute(1L, new PaymentRequest(BigDecimal.valueOf(100), PaymentMethod.PIX), 10L, false));
+
+        verify(paymentRepository, never()).saveAndFlush(any());
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 }

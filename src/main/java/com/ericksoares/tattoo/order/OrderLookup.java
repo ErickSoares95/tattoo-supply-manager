@@ -24,7 +24,7 @@ public class OrderLookup {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
 
-        return new OrderSummary(order.getId(), order.getUserId(), order.getTotal());
+        return new OrderSummary(order.getId(), order.getUserId(), order.getTotal(), order.getStatus());
     }
 
     /** Units sold per product over all orders, best sellers first. */

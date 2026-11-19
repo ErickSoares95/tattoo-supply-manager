@@ -1,5 +1,6 @@
 package com.ericksoares.tattoo.payment;
 
+import com.ericksoares.tattoo.order.OrderStatus;
 import com.ericksoares.tattoo.order.OrderSummary;
 import com.ericksoares.tattoo.order.OrderNotFoundException;
 import com.ericksoares.tattoo.order.OrderLookup;
@@ -31,11 +32,11 @@ class FindOrderPaymentsServiceTest {
     @Test
     void shouldReturnPaymentsForOrderOwner() {
 
-        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.TEN);
+        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.TEN, OrderStatus.PENDING_PAYMENT);
         when(orderLookup.findSummary(1L)).thenReturn(order);
         when(paymentRepository.findByOrderIdOrderByCreationDateDesc(1L))
                 .thenReturn(List.of(Payment.builder()
-                        .id(5L).orderId(1L).amount(BigDecimal.TEN).method("PIX")
+                        .id(5L).orderId(1L).amount(BigDecimal.TEN).method(PaymentMethod.PIX)
                         .status(PaymentStatus.APPROVED).build()));
 
         List<PaymentResponse> result = service.execute(1L, 10L, false);
@@ -53,7 +54,7 @@ class FindOrderPaymentsServiceTest {
     @Test
     void shouldThrowAccessDeniedWhenNotOwnerNorAdmin() {
 
-        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.TEN);
+        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.TEN, OrderStatus.PENDING_PAYMENT);
         when(orderLookup.findSummary(1L)).thenReturn(order);
 
         assertThrows(AccessDeniedException.class, () -> service.execute(1L, 999L, false));
@@ -63,7 +64,7 @@ class FindOrderPaymentsServiceTest {
     @Test
     void shouldAllowAdminToViewAnyOrderPayments() {
 
-        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.TEN);
+        OrderSummary order = new OrderSummary(1L, 10L, BigDecimal.TEN, OrderStatus.PENDING_PAYMENT);
         when(orderLookup.findSummary(1L)).thenReturn(order);
         when(paymentRepository.findByOrderIdOrderByCreationDateDesc(1L)).thenReturn(List.of());
 

@@ -18,7 +18,7 @@ public final class PaymentTestFixtures {
         Payment payment = Payment.builder()
                 .orderId(orderId)
                 .amount(amount)
-                .method(method)
+                .method(PaymentMethod.valueOf(method))
                 .status(status)
                 .build();
         return context.getBean(PaymentRepository.class).save(payment).getId();

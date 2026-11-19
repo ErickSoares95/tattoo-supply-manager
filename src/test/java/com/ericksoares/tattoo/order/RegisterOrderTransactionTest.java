@@ -51,7 +51,7 @@ class RegisterOrderTransactionTest {
         when(orderRepository.save(any(Order.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        OrderResponse order = service.execute(request, 1L);
+        OrderResponse order = service.execute(request, 1L, null);
 
         assertNotNull(order);
 
@@ -86,7 +86,7 @@ class RegisterOrderTransactionTest {
 
         assertThrows(
                 ProductNotFoundException.class,
-                () -> service.execute(request, 1L)
+                () -> service.execute(request, 1L, null)
         );
 
         verify(orderRepository, never())
@@ -114,7 +114,7 @@ class RegisterOrderTransactionTest {
         when(orderRepository.save(any(Order.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        OrderResponse order = service.execute(request, 1L);
+        OrderResponse order = service.execute(request, 1L, null);
 
         assertEquals(0, BigDecimal.valueOf(500).compareTo(order.total()));
 
@@ -136,7 +136,7 @@ class RegisterOrderTransactionTest {
 
         assertThrows(
                 InvalidOrderItemQuantityException.class,
-                () -> service.execute(request, 1L)
+                () -> service.execute(request, 1L, null)
         );
 
         verify(productInventory, never())
