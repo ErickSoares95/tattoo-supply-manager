@@ -9,6 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -120,5 +121,71 @@ class AuthControllerIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isNotEmpty())
                 .andExpect(jsonPath("$.email").value("cpflogin@teste.com"));
+    }
+
+    private User saveUser(String email) {
+        return userRepository.save(User.builder()
+                .username(email.substring(0, email.indexOf('@')))
+                .email(email)
+                .password(passwordEncoder.encode("Senha1234"))
+                .fullName("Usuario Login")
+                .userStatus(UserStatus.ACTIVE)
+                .userType(UserType.CLIENT)
+                .build());
+    }
+
+    private String login(String login, String password) {
+        return """
+                {"login":"%s","password":"%s"}
+                """.formatted(login, password);
+    }
+
+    @Test
+    void shouldLoginWithTheEmailInAnyCase() throws Exception {
+
+        saveUser("case@teste.com");
+
+        mockMvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content(login("  CASE@Teste.com ", "Senha1234")))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldAnswer429AfterRepeatedWrongPasswords() throws Exception {
+
+        saveUser("brute@teste.com");
+
+        for (int i = 0; i < LoginAttemptGuard.MAX_FAILURES; i++) {
+            mockMvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
+                            .content(login("brute@teste.com", "Errada123")))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        mockMvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content(login("brute@teste.com", "Senha1234")))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Too many failed login attempts")));
+    }
+
+    @Test
+    void shouldRefuseATokenIssuedBeforeThePasswordChange() throws Exception {
+
+        User user = saveUser("rotate@teste.com");
+
+        String response = mockMvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content(login("rotate@teste.com", "Senha1234")))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        String token = response.replaceAll(".*\"token\":\"([^\"]+)\".*", "$1");
+
+        mockMvc.perform(get("/users/me").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+
+        // A change a couple of seconds after the token was issued (iat has second precision).
+        user.setPasswordChangedAt(java.time.Instant.now().plusSeconds(2));
+        userRepository.saveAndFlush(user);
+
+        mockMvc.perform(get("/users/me").header("Authorization", "Bearer " + token))
+                .andExpect(status().isUnauthorized());
     }
 }

@@ -19,7 +19,7 @@ class CreateUserService {
 
     public UserResponse execute(CreateUserRequest request) {
 
-        validateEmail(request.email());
+        validateEmail(UserMapper.normalizeEmail(request.email()));
 
         validateUsername(request.username());
 

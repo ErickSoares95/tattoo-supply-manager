@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 @Service
@@ -63,7 +64,22 @@ public class JwtService {
     public boolean isTokenValid(Claims claims, UserDetails userDetails) {
 
         return claims.getSubject().equals(userDetails.getUsername())
-                && userDetails.isEnabled();
+                && userDetails.isEnabled()
+                && !issuedBeforeCredentialsChange(claims, userDetails);
+    }
+
+    /**
+     * True when the password changed after this token was issued (stolen/old sessions die on a
+     * password change). JWT iat has second precision, so the change time is truncated too: a
+     * token issued in the same second as the change is still accepted.
+     */
+    private static boolean issuedBeforeCredentialsChange(Claims claims, UserDetails userDetails) {
+        if (!(userDetails instanceof AuthenticatedUser user) || user.getCredentialsChangedAt() == null) {
+            return false;
+        }
+        Date issuedAt = claims.getIssuedAt();
+        return issuedAt == null
+                || issuedAt.toInstant().isBefore(user.getCredentialsChangedAt().truncatedTo(ChronoUnit.SECONDS));
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {

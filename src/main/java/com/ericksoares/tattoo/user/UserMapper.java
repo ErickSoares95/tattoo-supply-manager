@@ -8,7 +8,7 @@ class UserMapper {
 
         return User.builder()
                 .username(request.username())
-                .email(request.email())
+                .email(normalizeEmail(request.email()))
                 .password(request.password())
                 .fullName(request.fullName())
                 .phoneNumber(request.phoneNumber())
@@ -25,6 +25,11 @@ class UserMapper {
      * a punctuated CPF (up to 14 chars, allowed by CreateUserRequest/UpdateUserRequest's
      * @Size) would overflow the "cpf varchar(11)" column and fail at the database level.
      */
+    /** Emails are case-insensitive: stored lowercased (V3 adds a CHECK for it). */
+    public static String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase(java.util.Locale.ROOT);
+    }
+
     public static String normalizeCpf(String cpf) {
 
         if (cpf == null || cpf.isBlank()) {

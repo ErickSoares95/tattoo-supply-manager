@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "users")
 @Getter
@@ -44,4 +46,8 @@ class User extends BaseEntity {
 
     @Column
     private String imageUrl;
+
+    // Last password change; JWTs issued before it are refused (JwtService.isTokenValid).
+    @Column(name = "password_changed_at")
+    private Instant passwordChangedAt;
 }

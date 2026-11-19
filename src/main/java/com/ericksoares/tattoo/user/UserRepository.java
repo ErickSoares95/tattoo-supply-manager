@@ -24,7 +24,7 @@ interface UserRepository extends
 
     Optional<User> findByEmail(String email);
 
-    Optional<User> findByEmailOrCpf(String email, String cpf);
+    Optional<User> findByCpf(String cpf);
 
     /**
      * SELECT ... FOR UPDATE over the matching rows, ordered by id so concurrent callers lock in

@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -62,6 +64,28 @@ class JwtServiceTest {
                         user
                 )
         );
+    }
+
+    @Test
+    void shouldRejectTokenIssuedBeforeThePasswordChange() {
+
+        String token = jwtService.generateToken(user);
+
+        AuthenticatedUser afterPasswordChange = new AuthenticatedUser(
+                1L, "admin@tattoo.com", "new-hash", "ADMIN", true, Instant.now().plusSeconds(5));
+
+        assertFalse(jwtService.isTokenValid(token, afterPasswordChange));
+    }
+
+    @Test
+    void shouldAcceptTokenIssuedAfterThePasswordChange() {
+
+        AuthenticatedUser changedEarlier = new AuthenticatedUser(
+                1L, "admin@tattoo.com", "new-hash", "ADMIN", true, Instant.now().minusSeconds(60));
+
+        String token = jwtService.generateToken(changedEarlier);
+
+        assertTrue(jwtService.isTokenValid(token, changedEarlier));
     }
 
     @Test

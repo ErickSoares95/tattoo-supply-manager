@@ -33,6 +33,7 @@ record CreateUserRequest(
         String phoneNumber,
 
         @Size(min = 11, max = 14)
+        @ValidCpf
         String cpf,
 
         @Size(max = 255)
