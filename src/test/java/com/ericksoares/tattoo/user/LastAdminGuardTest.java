@@ -6,6 +6,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
@@ -30,8 +32,8 @@ class LastAdminGuardTest {
     @Test
     void shouldThrowWhenDemotingTheOnlyActiveAdmin() {
 
-        when(repository.countByUserTypeAndUserStatus(UserType.ADMIN, UserStatus.ACTIVE))
-                .thenReturn(1L);
+        when(repository.findByUserTypeAndUserStatusOrderById(UserType.ADMIN, UserStatus.ACTIVE))
+                .thenReturn(List.of(activeAdmin()));
 
         assertThrows(
                 LastAdminException.class,
@@ -42,8 +44,8 @@ class LastAdminGuardTest {
     @Test
     void shouldAllowDemotingWhenAnotherActiveAdminExists() {
 
-        when(repository.countByUserTypeAndUserStatus(UserType.ADMIN, UserStatus.ACTIVE))
-                .thenReturn(2L);
+        when(repository.findByUserTypeAndUserStatusOrderById(UserType.ADMIN, UserStatus.ACTIVE))
+                .thenReturn(List.of(activeAdmin(), activeAdmin()));
 
         assertDoesNotThrow(
                 () -> guard.ensureNotRemovingLastAdmin(activeAdmin(), false)
