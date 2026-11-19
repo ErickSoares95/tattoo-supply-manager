@@ -6,5 +6,6 @@ import java.math.BigDecimal;
 public record OrderSummary(
         Long id,
         Long userId,
-        BigDecimal total
+        BigDecimal total,
+        OrderStatus status
 ) {}

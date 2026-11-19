@@ -9,5 +9,6 @@ record OrderResponse(
         Long userId,
         List<OrderItemResponse> items,
         BigDecimal total,
+        OrderStatus status,
         LocalDateTime creationDate
 ) {}

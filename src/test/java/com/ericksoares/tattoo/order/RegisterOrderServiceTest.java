@@ -38,31 +38,31 @@ class RegisterOrderServiceTest {
     void shouldReturnResultWithoutRetryWhenFirstAttemptSucceeds() {
 
         OrderResponse response = mock(OrderResponse.class);
-        when(transaction.execute(request, 1L)).thenReturn(response);
+        when(transaction.execute(request, 1L, null)).thenReturn(response);
 
         assertSame(response, service.execute(request, 1L));
 
-        verify(transaction, times(1)).execute(request, 1L);
+        verify(transaction, times(1)).execute(request, 1L, null);
     }
 
     @Test
     void shouldRetryTheWholeTransactionOnOptimisticLockFailure() {
 
         OrderResponse response = mock(OrderResponse.class);
-        when(transaction.execute(request, 1L))
+        when(transaction.execute(request, 1L, null))
                 .thenThrow(conflict())
                 .thenThrow(conflict())
                 .thenReturn(response);
 
         assertSame(response, service.execute(request, 1L));
 
-        verify(transaction, times(3)).execute(request, 1L);
+        verify(transaction, times(3)).execute(request, 1L, null);
     }
 
     @Test
     void shouldMapToConflictWhenRetriesAreExhausted() {
 
-        when(transaction.execute(request, 1L)).thenThrow(conflict());
+        when(transaction.execute(request, 1L, null)).thenThrow(conflict());
 
         StockConflictException ex = assertThrows(
                 StockConflictException.class,
@@ -70,16 +70,16 @@ class RegisterOrderServiceTest {
         );
 
         assertEquals(HttpStatus.CONFLICT, ex.getStatus());
-        verify(transaction, times(RegisterOrderService.MAX_ATTEMPTS)).execute(request, 1L);
+        verify(transaction, times(RegisterOrderService.MAX_ATTEMPTS)).execute(request, 1L, null);
     }
 
     @Test
     void shouldNotRetryBusinessErrors() {
 
-        when(transaction.execute(request, 1L)).thenThrow(new InsufficientStockException("Tinta Black"));
+        when(transaction.execute(request, 1L, null)).thenThrow(new InsufficientStockException("Tinta Black"));
 
         assertThrows(InsufficientStockException.class, () -> service.execute(request, 1L));
 
-        verify(transaction, times(1)).execute(request, 1L);
+        verify(transaction, times(1)).execute(request, 1L, null);
     }
 }

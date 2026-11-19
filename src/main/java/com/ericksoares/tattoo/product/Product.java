@@ -77,6 +77,14 @@ class Product extends BaseEntity {
         this.stock -= quantity;
     }
 
+    /** Gives back units reserved by an order that was cancelled. */
+    public void increaseStock(int quantity) {
+        if (quantity <= 0) {
+            throw new InvalidStockQuantityException();
+        }
+        this.stock += quantity;
+    }
+
     private static final int DAILY_DEAL_MONTHS_IN_STOCK = 3;
 
     // Business rule confirmed with the user (2026-09-05): a product enters "Ofertas do

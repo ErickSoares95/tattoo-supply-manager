@@ -18,25 +18,44 @@ class OrderController {
     private final RegisterOrderService service;
     private final FindOrdersService findOrdersService;
     private final FindOrderByIdService findOrderByIdService;
+    private final CancelOrderService cancelOrderService;
 
     public OrderController(
             RegisterOrderService service,
             FindOrdersService findOrdersService,
-            FindOrderByIdService findOrderByIdService
+            FindOrderByIdService findOrderByIdService,
+            CancelOrderService cancelOrderService
     ) {
         this.service = service;
         this.findOrdersService = findOrdersService;
         this.findOrderByIdService = findOrderByIdService;
+        this.cancelOrderService = cancelOrderService;
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('CLIENT','ADMIN')")
     public ResponseEntity<OrderResponse> create(
             @Valid @RequestBody OrderRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser
     ) {
+        String key = idempotencyKey == null || idempotencyKey.isBlank() ? null : idempotencyKey.trim();
+        if (key != null && key.length() > 100) {
+            throw new InvalidIdempotencyKeyException();
+        }
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(service.execute(request, authenticatedUser.getId()));
+                .body(service.execute(request, authenticatedUser.getId(), key));
+    }
+
+    @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasAnyRole('CLIENT','ADMIN')")
+    public ResponseEntity<OrderResponse> cancel(
+            @PathVariable Long id,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        boolean isAdmin = UserType.ADMIN.name().equals(authenticatedUser.getRole());
+
+        return ResponseEntity.ok(cancelOrderService.execute(id, authenticatedUser.getId(), isAdmin));
     }
 
     @GetMapping

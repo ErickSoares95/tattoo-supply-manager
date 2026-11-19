@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * One attempt at registering an order, in its own transaction. Kept in a separate bean from
@@ -36,7 +37,7 @@ class RegisterOrderTransaction {
     }
 
     @Transactional
-    public OrderResponse execute(OrderRequest request, Long userId) {
+    public OrderResponse execute(OrderRequest request, Long userId, String idempotencyKey) {
 
         List<OrderItem> items = new ArrayList<>();
         List<OrderItemData> eventItems = new ArrayList<>();
@@ -67,6 +68,7 @@ class RegisterOrderTransaction {
         Order order = new Order();
         order.setItems(items);
         order.setUserId(userId);
+        order.setIdempotencyKey(idempotencyKey);
 
         order.validate();
         order.calculateTotal();
@@ -82,5 +84,12 @@ class RegisterOrderTransaction {
         );
 
         return OrderMapper.toResponse(savedOrder);
+    }
+
+    /** The order already registered with this Idempotency-Key, if any (O5). */
+    @Transactional(readOnly = true)
+    public Optional<OrderResponse> findByIdempotencyKey(Long userId, String idempotencyKey) {
+        return orderRepository.findByUserIdAndIdempotencyKey(userId, idempotencyKey)
+                .map(OrderMapper::toResponse);
     }
 }

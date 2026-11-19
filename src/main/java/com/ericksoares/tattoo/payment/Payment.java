@@ -22,7 +22,9 @@ class Payment extends BaseEntity {
 
     private BigDecimal amount;
 
-    private String method;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 255)
+    private PaymentMethod method;
 
     // At most one APPROVED payment per order: enforced by the partial unique index
     // uk_payments_order_approved (migration V2), not only by ProcessPaymentService's check.

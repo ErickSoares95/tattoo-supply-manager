@@ -2,6 +2,9 @@ package com.ericksoares.tattoo.payment;
 
 import com.ericksoares.tattoo.order.OrderSummary;
 import com.ericksoares.tattoo.order.OrderLookup;
+import com.ericksoares.tattoo.order.OrderNotPayableException;
+import com.ericksoares.tattoo.order.OrderPayments;
+import com.ericksoares.tattoo.order.OrderStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.context.ApplicationEventPublisher;
@@ -20,15 +23,18 @@ class ProcessPaymentService {
     static final String SINGLE_APPROVED_CONSTRAINT = "uk_payments_order_approved";
 
     private final OrderLookup orderLookup;
+    private final OrderPayments orderPayments;
     private final PaymentRepository paymentRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     public ProcessPaymentService(
             OrderLookup orderLookup,
+            OrderPayments orderPayments,
             PaymentRepository paymentRepository,
             ApplicationEventPublisher eventPublisher
     ) {
         this.orderLookup = orderLookup;
+        this.orderPayments = orderPayments;
         this.paymentRepository = paymentRepository;
         this.eventPublisher = eventPublisher;
     }
@@ -40,6 +46,10 @@ class ProcessPaymentService {
 
         if (!isAdmin && !order.userId().equals(userId)) {
             throw new AccessDeniedException("You do not have permission to pay for this order");
+        }
+
+        if (order.status() == OrderStatus.CANCELLED) {
+            throw new OrderNotPayableException(orderId, order.status());
         }
 
         if (paymentRepository.existsByOrderIdAndStatus(orderId, PaymentStatus.APPROVED)) {
@@ -56,6 +66,12 @@ class ProcessPaymentService {
         payment.decide(order.total());
 
         Payment saved = saveGuardingSingleApproval(payment);
+
+        // Same transaction: if the order was cancelled meanwhile (Order.version), this fails and
+        // the approved payment rolls back with it.
+        if (saved.isApproved()) {
+            orderPayments.markPaid(orderId);
+        }
 
         log.info("Payment {} for order {} processed with status {}", saved.getId(), orderId, saved.getStatus());
 

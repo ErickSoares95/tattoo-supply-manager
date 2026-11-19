@@ -7,7 +7,7 @@ record PaymentResponse(
         Long id,
         Long orderId,
         BigDecimal amount,
-        String method,
+        PaymentMethod method,
         PaymentStatus status,
         LocalDateTime creationDate
 ) {}

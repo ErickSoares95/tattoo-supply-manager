@@ -58,3 +58,7 @@ notification:
   retry:
     fixed-delay-ms: ${NOTIFICATION_RETRY_FIXED_DELAY_MS:30000}
     initial-delay-ms: ${NOTIFICATION_RETRY_INITIAL_DELAY_MS:30000}
+# Unpaid orders are cancelled (stock given back) after this many hours (order.OrderExpirationJob)
+order:
+  expiration:
+    hours: ${ORDER_EXPIRATION_HOURS:48}

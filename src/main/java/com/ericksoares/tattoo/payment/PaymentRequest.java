@@ -11,6 +11,6 @@ record PaymentRequest(
         @DecimalMin(value = "0.01")
         BigDecimal amount,
 
-        @NotBlank
-        String method
+        @NotNull
+        PaymentMethod method
 ) {}
