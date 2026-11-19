@@ -20,5 +20,8 @@ record ProductResponse(
         // rejected payment still count here). This field powers "mais vendido" ordering for
         // the public catalog/home page; the financial report's stricter definition is
         // unchanged and stays admin-only.
-        long unitsSold
+        long unitsSold,
+        // Optimistic-lock version; the admin form sends it back on PUT so an edit made on a
+        // stale copy is refused (409) instead of overwriting stock sold in the meantime.
+        Long version
 ) {}
