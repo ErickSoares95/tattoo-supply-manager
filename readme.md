@@ -181,7 +181,7 @@ docker compose -f docker/docker-compose.yml up -d postgres
 ./mvnw test
 ```
 
-Runs the full suite (unit + integration) against a real PostgreSQL instance — make sure `postgres` is up first, as described above.
+Runs the full suite (unit + integration) against a real PostgreSQL: Testcontainers starts a throwaway `pgvector/pgvector:pg17` container, so Docker must be running (no local database needed). Without Docker, point it at an existing database with `TSM_TEST_DB_URL` (and `TSM_TEST_DB_USER` / `TSM_TEST_DB_PASSWORD`).
 
 ---
 

@@ -13,6 +13,9 @@ import java.util.List;
 interface FailedNotificationRepository
         extends JpaRepository<FailedNotification, Long> {
 
+    /** Every unprocessed failure (GET /notifications/failed). */
+    List<FailedNotification> findByProcessedFalse();
+
     /**
      * Unprocessed failures that still have attempts left and are not leased by another
      * worker ({@code lockedUntil} null or elapsed), oldest first, keyset-paginated by id
